@@ -1,0 +1,3 @@
+- Extract the clusters which are composed exclusively of one of the types: marine, freshwater.
+- BLAST against a database that includes the marine and the rest of life but excludes the freshwater genomes.
+- Investigate duplications: ?
