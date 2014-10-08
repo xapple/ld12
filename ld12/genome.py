@@ -1,13 +1,26 @@
 # Built-in modules #
 
+# Internal modules #
+from ld12.gene import Gene
+
 # First party modules #
 from fasta import FASTA
+from plumbing.cache import property_cached
 
 # Third party modules #
 
 ###############################################################################
 class Genome(FASTA):
-    """A FASTA file somewhere on the file system."""
+    """A FASTA file somewhere on the file system representing a genome."""
+
+    def __init__(self, path):
+        self.path = path
+        self.id = self.short_prefix
+        self.info = None # Filled in by the __init__.py
+
+    @property_cached
+    def genes(self):
+        return dict((seq.id, Gene(seq)) for seq in self)
 
     @property
     def partial(self):

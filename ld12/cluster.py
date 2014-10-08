@@ -1,5 +1,8 @@
 # Built-in modules #
 
+# Internal modules #
+from ld12 import genes
+
 # First party modules #
 from fasta import FASTA, AlignedFASTA
 from plumbing.autopaths import FilePath
@@ -12,20 +15,37 @@ from Bio import Phylo
 class Cluster(object):
     """A set of genes which are related in some way. For instance, all genes
     that clustered together when performing the MCL analysis.
-    (all variations of a some single copy gene class)."""
+    (e.g. all variants of a some single copy gene class)."""
 
     def __repr__(self): return '<%s object number %i>' % (self.__class__.__name__, self.num)
 
-    def __init__(self, num, ids, analysis, name=None):
+    def __init__(self, num, line, analysis, name=None):
         # Basic params #
         self.num = num
-        self.ids = ids
+        self.ids = frozenset(line.split())
         self.analysis = analysis
+        # Optional #
         self.name = "cluster_%i" % num if name is None else name
+        # Path of sequences #
         self.path = self.analysis.p.clusters_dir + self.name + '.fasta'
-        # Pick only one gene per genome #
-        self.genomes = [g for g in self.analysis.genomes if g.ids&self.ids]
-        self.filtered_ids = [set(g.ids&self.ids).pop() for g in self.genomes]
+        # Genes #
+        self.genes = [genes[ID] for ID in self.ids]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @property
     def counts(self):
@@ -33,7 +53,7 @@ class Cluster(object):
 
     @property
     def score(self):
-        """Given the genome counts, what is the single-copy likelihood score"""
+        """Given the genome counts, what is the single-copy custom likelihood score"""
         score = 0
         for name, count in self.counts.iteritems():
             partial = [g for g in self.analysis.genomes if g.prefix == name][0].partial

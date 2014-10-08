@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+# Built-in modules #
+import os, inspect, argparse, re
+from argparse import RawTextHelpFormatter
+
+# Internal modules #
+import ld12
+
+# Retrieve the documentation from the README file #
+current_script = inspect.getframeinfo(inspect.currentframe()).filename
+current_dir = os.path.dirname(os.path.abspath(current_script)) + '/'
+readme_path = current_dir + '../README.md'
+
+# Make a shell arguments parser #
+desc = doc_version + "\n\n"
+parser = argparse.ArgumentParser(description=desc, formatter_class=RawTextHelpFormatter)
+
+# All the required arguments #
+parser.add_argument("output_dir", help="The output directory", type=str)
+
+# All the optional arguments #
+parameters = {
+    "num_threads"   : "Number of threads to use. Default to the number of cores on the current machine.",
+    "min_identity"  : "Minimum identity in similarity search. Defaults to 0.97.",
+    "e_value"       : "Minimum e-value in similarity search. Defaults to 0.0001.",
+    "min_coverage"  : "Minimum query coverage in similarity search. Defaults to 0.97.",
+}
+
+# Parse it #
+for param, help in parameters.items(): parser.add_argument("--" + param, help=help)
+args = parser.parse_args()
+input_path = args.input_file
+kwargs = {k:getattr(args, k) for k in parameters if getattr(args, k) is not None}
+
+# Start message #
+print doc_version + " (pid %i)" % os.getpid()
+
+# Run the pipeline #
+analysis = ld12.Analysis(output_dir, **kwargs)
+analysis.timer.print_start()
+analysis.run()
+
+# End message #
+print "------------\nSuccess. Outputs are in '%s'" % analysis.out_dir
+analysis.timer.print_end()
+analysis.timer.print_total_elapsed()

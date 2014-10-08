@@ -6,4 +6,9 @@
 
 ###############################################################################
 class Gene(object):
-    pass
+    """A sequence with an ID associated."""
+
+    def __init__(self, seq):
+        self.seq = seq
+        self.id = seq.id
+        self.annotation = None # Filled in by the __init__.py
