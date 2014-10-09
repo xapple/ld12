@@ -2,10 +2,11 @@
 from __future__ import division
 
 # Built-in modules #
+import os, multiprocessing
 from collections import defaultdict
-import multiprocessing
 
-# Internal modules #
+# Internal modules #
+from ld12 import genomes
 from ld12.cluster import Cluster
 
 # First party modules #
@@ -52,8 +53,10 @@ class Analysis(object):
                  seq_type     = 'prot' or 'nucl',
                  mcl_factor   = 1.5,
                  num_threads  = None):
-        # Paths #
+        # Paths #
         self.base_dir = out_dir
+        if not self.base_dir.endswith('/'): self.base_dir += '/'
+        if not os.path.exists(self.base_dir): os.makedirs(self.base_dir)
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # Other #
         self.e_value      = e_value
@@ -73,8 +76,8 @@ class Analysis(object):
         db = BLASTdb(self.p.all_fasta, self.seq_type)
         if not self.p.all_nin and not self.p.all_pin:
             print "--> STEP 1: Building BLASTable database with all genes..."
-            shell_output('cat %s > %s' % (' '.join(self.genomes), db))
-            assert len(db.ids) == len(set(db.ids))
+            shell_output('zcat %s > %s' % (' '.join(genomes.values()), db))
+            assert len(db) == sum(map(len,genomes.values()))
             db.makeblastdb()
             self.timer.print_elapsed()
         return db
@@ -92,7 +95,7 @@ class Analysis(object):
         """The sequence similarity search to be run"""
         return SeqSearch(input_fasta = self.blast_db,
                          seq_type    = self.seq_type,
-                         database    = self.search_db,
+                         database    = self.blast_db,
                          algorithm   = "blast",
                          num_threads = self.num_threads,
                          filtering   = self.filtering,

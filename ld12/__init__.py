@@ -24,11 +24,11 @@ genomes = [Genome(f) for f in fasta_paths]
 genomes = dict((G.id, G) for G in genomes)
 
 # Iterate over all genes #
-genes = dict((g.id, g) for G in genomes.values() for g in G.genes)
+genes = dict((g.id, g) for G in genomes.values() for g in G.genes.values())
 
 # Add the metadata #
 metadata = pandas.io.parsers.read_csv(data_dir + 'metadata.tsv', sep='\t', index_col=0, encoding='utf-8')
-for g in genomes: g.info = metadata.loc[int(g.short_prefix)]
+for g in genomes.values(): g.info = metadata.loc[int(g.short_prefix)]
 
 # Add the annotations #
 for line in open(data_dir + 'annotations.tsv'):

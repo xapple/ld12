@@ -24,9 +24,9 @@ class Cluster(object):
         self.num = num
         self.ids = frozenset(line.split())
         self.analysis = analysis
-        # Optional #
+        # Optional #
         self.name = "cluster_%i" % num if name is None else name
-        # Path of sequences #
+        # Path of sequences #
         self.path = self.analysis.p.clusters_dir + self.name + '.fasta'
         # Genes #
         self.genes = [genes[ID] for ID in self.ids]
