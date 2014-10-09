@@ -147,6 +147,7 @@ class Analysis(object):
     def make_trees(self):
         for c in self.best_clusters:
             print "Building tree for cluster '%s'..." % c.name
+            print c.tree
             self.timer.print_elapsed()
 
     def save_count_table(self):
