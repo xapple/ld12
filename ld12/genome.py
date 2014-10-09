@@ -26,3 +26,8 @@ class Genome(FASTA):
     def partial(self):
         """Apparently some of them are SAGs and thus only partial."""
         return True if self.filename.startswith('2236') else False
+
+    @property
+    def long_name(self):
+        """A more descriptive name"""
+        return "genome " + self.name + " of family '" + self.info['group'] + "'"

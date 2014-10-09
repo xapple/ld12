@@ -80,23 +80,17 @@ class Analysis(object):
         return db
 
     @property_cached
-    def filtering(self):
-        """Return a dictionary with the filtering options for the sequence similarity
-        search."""
-        return {'e_value':      self.e_value,
-                'min_identity': self.min_identity,
-                'min_coverage': self.min_coverage}
-
-    @property_cached
     def search(self):
         """The sequence similarity search to be run"""
         return ParallelSeqSearch(
+              algorithm   = "blast",
               input_fasta = self.blast_db,
               seq_type    = self.seq_type,
               database    = self.blast_db,
-              algorithm   = "blast",
               num_threads = self.num_threads,
-              filtering   = self.filtering,
+              filtering   = {'e_value':      self.e_value,
+                             'min_identity': self.min_identity,
+                             'min_coverage': self.min_coverage},
               params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
 
     @property
@@ -106,15 +100,15 @@ class Analysis(object):
         # Check that the search was run #
         if not self.search.out_path.exists:
             print "Using: %i genes" % len(self.blast_db)
-            print "--> STEP 2: Similarity search against all genes"
+            print "--> STEP 2: Similarity search against all genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()
             print "--> STEP 3: Filter out bad hits from the search results"
             self.search.filter()
-            self.timer.print_elapsed()
             if self.search.out_path.count_bytes == 0:
                 raise Exception("Found exactly zero hits after the similarity search.")
             print "Filtered %s of the hits" % self.percent_filtered
+            self.timer.print_elapsed()
         # Parse the results #
         return self.search.results
 
@@ -130,7 +124,7 @@ class Analysis(object):
     def clusters(self):
         """A list of Clusters. See http://bioops.info/2011/03/mcl-a-cluster-algorithm-for-graphs/"""
         if not self.p.clusters.exists:
-            print "Using results from %i hits" % self.search.out_path.count
+            print "Using results from %i hits" % len(self.scores)
             print "--> STEP 4: Running the MCL clustering"
             self.p.bit_scores.writelines(k[0]+'\t'+k[1]+'\t'+v+'\n' for k,v in self.scores.items())
             sh.mcxload("-abc", self.p.bit_scores, "--stream-mirror", "--stream-neg-log10", "-stream-tf", "ceil(200)", "-o", self.p.network, "-write-tab", self.p.dictionary)
@@ -148,22 +142,25 @@ class Analysis(object):
         for cluster in self.clusters:
             for gene in cluster.genes:
                 result[cluster.name][gene.genome.name] += 1
-        result = pandas.DataFrame(result)
+        result = pandas.DataFrame(result, dtype=int)
         result = result.reindex_axis(sorted(result.index, key=natural_sort))
-        result = result.reindex_axis(sorted(result.columns, key=natural_sort), axis=1)
+        result = result.reindex_axis(sorted(result.columns, key=natural_sort), axis='columns')
         result = result.fillna(0)
         return result
 
     @property_cached
-    def single_copy_clusters(self):
-        """Subset of self.clusters. Which clusters appear exactly once in each genome.
-        Some genomes are partial so we will be more flexible on those ones."""
+    def best_clusters(self):
+        """Subset of self.clusters. We want to find the clusters that have exactly one
+        member in each of the genomes. Some genomes are partial so we will be more
+        flexible on those ones."""
         self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
-        return self.clusters[0:100]
+        return self.clusters[0:50]
 
     #-------------------------------------------------------------------------#
+    def make_trees(self):
+        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
+
     def save_count_table(self):
-        self.count_table = self.count_table.reindex([c.name for c in self.clusters])
         self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
 
     @property
