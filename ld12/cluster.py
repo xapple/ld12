@@ -66,7 +66,7 @@ class Cluster(object):
         fasta = FASTA(self.p.fasta)
         if not fasta:
             fasta.create()
-            for gene in self.genes: fasta.add_str(str(gene), name=gene.long_name)
+            for gene in self.filtered_genes: fasta.add_str(str(gene), name=gene.long_name)
             fasta.close()
         return fasta
 

@@ -1,11 +1,16 @@
+# Modules #
+from tqdm import tqdm
 import socket, os
+from ld12.analysis import Analysis
+
+# Constants #
 host = socket.gethostname()
 home = os.environ['HOME'] + '/'
 
+# Output path #
 if host.startswith('milou'): out_dir = home + "/proj/b2013274/results"
 else:                        out_dir = home + "/proj/b2013274/results"
 
-from ld12.analysis import Analysis
+# Do it #
 a = Analysis(out_dir=out_dir)
-a.save_count_table()
-for c in a.best_clusters[0:2]: print c.phylogeny
+for c in tqdm(a.best_clusters): c.tree

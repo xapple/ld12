@@ -136,6 +136,21 @@ class Analysis(object):
         return [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
 
     @property_cached
+    def best_clusters(self):
+        """Subset of self.clusters. We want to find the clusters that have exactly one
+        member in each of the genomes. Some genomes are partial so we will be more
+        flexible on those ones."""
+        self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
+        return self.clusters[0:50]
+
+    #-------------------------------------------------------------------------#
+    def make_trees(self):
+        pass
+
+    def save_count_table(self):
+        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
+
+    @property_cached
     def count_table(self):
         """Return a dataframe with genomes as columns and clusters as rows"""
         result = defaultdict(lambda: defaultdict(int))
@@ -147,21 +162,6 @@ class Analysis(object):
         result = result.reindex_axis(sorted(result.columns, key=natural_sort), axis='columns')
         result = result.fillna(0)
         return result
-
-    @property_cached
-    def best_clusters(self):
-        """Subset of self.clusters. We want to find the clusters that have exactly one
-        member in each of the genomes. Some genomes are partial so we will be more
-        flexible on those ones."""
-        self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
-        return self.clusters[0:50]
-
-    #-------------------------------------------------------------------------#
-    def make_trees(self):
-        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
-
-    def save_count_table(self):
-        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
 
     @property
     def percent_filtered(self):
