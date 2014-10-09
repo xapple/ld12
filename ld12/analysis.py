@@ -151,13 +151,14 @@ class Analysis(object):
         result = result.fillna(0)
         return result
 
-    def save_count_table(self):
-        self.count_table = self.count_table.reindex([c.name for c in self.clusters])
-        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
-
     @property_cached
     def single_copy_clusters(self):
         """Subset of self.clusters. Which clusters appear exactly once in each genome.
         Some genomes are partial so we will be more flexible on those ones."""
         self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
         return self.clusters[0:100]
+
+    #-------------------------------------------------------------------------#
+    def save_count_table(self):
+        self.count_table = self.count_table.reindex([c.name for c in self.clusters])
+        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')

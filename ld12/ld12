@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Built-in modules #
-import os, inspect, argparse, re
+import os, inspect, argparse
 from argparse import RawTextHelpFormatter
 
 # Internal modules #
@@ -13,6 +13,7 @@ current_dir = os.path.dirname(os.path.abspath(current_script)) + '/'
 readme_path = current_dir + '../README.md'
 
 # Make a shell arguments parser #
+doc_version = "seqenv version %s" % (ld12.__version__)
 desc = doc_version + "\n\n"
 parser = argparse.ArgumentParser(description=desc, formatter_class=RawTextHelpFormatter)
 
@@ -21,17 +22,19 @@ parser.add_argument("output_dir", help="The output directory", type=str)
 
 # All the optional arguments #
 parameters = {
+    "e_value"       : "Minimum e-value in similarity search. Defaults to 0.0001.",
+    "mcl_factor"    : "The MCL clustering factor. Defaults to 1.5.",
+    "seq_type"      : "Either `nucl` or `prot`. Defaults to `prot`",
     "num_threads"   : "Number of threads to use. Default to the number of cores on the current machine.",
     "min_identity"  : "Minimum identity in similarity search. Defaults to 0.97.",
-    "e_value"       : "Minimum e-value in similarity search. Defaults to 0.0001.",
     "min_coverage"  : "Minimum query coverage in similarity search. Defaults to 0.97.",
 }
 
 # Parse it #
 for param, help in parameters.items(): parser.add_argument("--" + param, help=help)
 args = parser.parse_args()
-input_path = args.input_file
-kwargs = {k:getattr(args, k) for k in parameters if getattr(args, k) is not None}
+output_dir = args.output_dir
+kwargs = dict((k, getattr(args, k)) for k in parameters if getattr(args, k) is not None)
 
 # Start message #
 print doc_version + " (pid %i)" % os.getpid()
