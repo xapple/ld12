@@ -6,5 +6,5 @@ if host.startswith('milou'): out_dir = home + "/proj/b2013274/results"
 else:                        out_dir = home + "/proj/b2013274/results"
 
 from ld12.analysis import Analysis
-a = Analysis(out_dir=out_dir)
-a.search_results
+a = Analysis(out_dir=out_dir, num_threads=16)
+a.save_count_table()

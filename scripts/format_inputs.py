@@ -31,7 +31,10 @@ def strip(seq):
 for faa,fna in zip(faas, fnas):
     faas_genes = [strip(seq) for seq in faa]
     fnas_genes = [strip(seq) for seq in fna]
-    print faa, len(set(fnas_genes) ^ set(faas_genes))
+    print faa, len(set(fnas_genes) ^ set(faas_genes)), "discrepancies"
+    #print "- in fna but not in faa:", [x for x in set(fnas_genes) - set(faas_genes)]
+    #print "- in faa but not in fna:", [x for x in set(faas_genes) - set(fnas_genes)]
+    #print ""
 
 fnas_genes = [strip(seq) for fna in fnas for seq in fna]
 print len(fnas_genes), len(set(fnas_genes))

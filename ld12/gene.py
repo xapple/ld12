@@ -10,7 +10,8 @@ class Gene(object):
 
     def __repr__(self): return '<%s object %s>' % (self.__class__.__name__, self.id)
 
-    def __init__(self, seq):
+    def __init__(self, seq, genome):
         self.seq = seq
-        self.id = seq.id
+        self.name = seq.id
+        self.genome = genome
         self.annotation = None # Filled in by the __init__.py

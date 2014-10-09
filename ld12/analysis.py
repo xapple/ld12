@@ -27,18 +27,15 @@ class Analysis(object):
     Look at the Omnigraffle outline for more information."""
 
     all_paths = """
-    /all_genes.fasta
-    /all_genes.fasta.nin
-    /all_genes.fasta.pin
-    /all_genes.blastout
-    /filtered.blastout
-    /filtered.abc
-    /network.mci
-    /dictionary.tab
-    /clusters.txt
-    /count_table.tsv
-    /master.aln
-    /master.tree
+    /blast/all_genes.fasta
+    /blast/all_genes.fasta.nin
+    /blast/all_genes.fasta.pin
+    /blast/all_genes.blastout
+    /mcl/bit_scores.abc
+    /mcl/network.mci
+    /mcl/dictionary.tab
+    /mcl/clusters.txt
+    /user_outputs/count_table.tsv
     /clusters/
     """
 
@@ -117,6 +114,7 @@ class Analysis(object):
             self.timer.print_elapsed()
             if self.search.out_path.count_bytes == 0:
                 raise Exception("Found exactly zero hits after the similarity search.")
+            print "Filtered %s of the hits" % self.percent_filtered
         # Parse the results #
         return self.search.results
 
@@ -124,8 +122,7 @@ class Analysis(object):
     def scores(self):
         """For every gene pair that had a significant hit, what is the score of this hit."""
         result = {}
-        for line in self.search.results:
-            qseqid, sseqid, bitscore, pident, qcovs = line.split()
+        for qseqid, sseqid, bitscore, pident, qcovs in self.search.results:
             result[(qseqid, sseqid)] = bitscore
         return result
 
@@ -133,15 +130,16 @@ class Analysis(object):
     def clusters(self):
         """A list of Clusters. See http://bioops.info/2011/03/mcl-a-cluster-algorithm-for-graphs/"""
         if not self.p.clusters.exists:
-            print "Using results from %i hits" % len(self.scores)
+            print "Using results from %i hits" % self.search.out_path.count
             print "--> STEP 4: Running the MCL clustering"
-            self.p.filtered_abc.writelines(k[0]+'\t'+k[1]+'\t'+v+'\n' for k,v in self.scores)
-            sh.mcxload("-abc", self.p.filtered_abc, "--stream-mirror", "--stream-neg-log10", "-stream-tf", "ceil(200)", "-o", self.p.network, "-write-tab", self.p.dictionary)
+            self.p.bit_scores.writelines(k[0]+'\t'+k[1]+'\t'+v+'\n' for k,v in self.scores.items())
+            sh.mcxload("-abc", self.p.bit_scores, "--stream-mirror", "--stream-neg-log10", "-stream-tf", "ceil(200)", "-o", self.p.network, "-write-tab", self.p.dictionary)
             mcl = sh.Command(which('mcl'))
             mcl(self.p.network, "-I", str(self.mcl_factor), "-use-tab", self.p.dictionary, "-o", self.p.clusters)
+            print "Got %i clusters" % len(self.p.clusters)
             self.timer.print_elapsed()
         # Make the clusters #
-        return [Cluster(i, line) for i, line in enumerate(self.p.clusters)]
+        return [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
 
     @property_cached
     def count_table(self):
@@ -149,9 +147,10 @@ class Analysis(object):
         result = defaultdict(lambda: defaultdict(int))
         for cluster in self.clusters:
             for gene in cluster.genes:
-                result[cluster.name][gene.genome.prefix] += 1
+                result[cluster.name][gene.genome.name] += 1
         result = pandas.DataFrame(result)
         result = result.reindex_axis(sorted(result.index, key=natural_sort))
+        result = result.reindex_axis(sorted(result.columns, key=natural_sort), axis=1)
         result = result.fillna(0)
         return result
 
@@ -166,3 +165,10 @@ class Analysis(object):
     def save_count_table(self):
         self.count_table = self.count_table.reindex([c.name for c in self.clusters])
         self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
+
+    @property
+    def percent_filtered(self):
+        """How many hits did we filter away ?"""
+        before = sum([q.out_path.count for q in self.search.blast_queries])
+        after = self.search.out_path.count
+        return "%.1f%%" % (100 - (after/before)*100)

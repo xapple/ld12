@@ -21,10 +21,10 @@ data_dir = module_dir + 'data/'
 # Make the genomes #
 fasta_paths = glob.glob(data_dir + 'genomes/*.fasta.gz')
 genomes = [Genome(f) for f in fasta_paths]
-genomes = dict((G.id, G) for G in genomes)
+genomes = dict((G.name, G) for G in genomes)
 
 # Iterate over all genes #
-genes = dict((g.id, g) for G in genomes.values() for g in G.genes.values())
+genes = dict((g.name, g) for G in genomes.values() for g in G.genes.values())
 
 # Add the metadata #
 metadata = pandas.io.parsers.read_csv(data_dir + 'metadata.tsv', sep='\t', index_col=0, encoding='utf-8')

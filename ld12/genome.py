@@ -15,12 +15,12 @@ class Genome(FASTA):
 
     def __init__(self, path):
         self.path = path
-        self.id = self.short_prefix
+        self.name = self.short_prefix
         self.info = None # Filled in by the __init__.py
 
     @property_cached
     def genes(self):
-        return dict((seq.id, Gene(seq)) for seq in self)
+        return dict((seq.id, Gene(seq, self)) for seq in self)
 
     @property
     def partial(self):

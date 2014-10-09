@@ -11,5 +11,5 @@ setup(
       author_email     = 'lucas.sinclair@me.com',
       classifiers      = ['Topic :: Scientific/Engineering :: Bio-Informatics'],
       packages         = ['ld12'],
-      requires         = ['plumbing', 'fasta'],
+      requires         = ['plumbing', 'fasta', 'seqsearch', 'biopython', 'sh', 'pandas', 'shell_command'],
 )
