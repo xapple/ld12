@@ -12,7 +12,7 @@ from ld12.cluster import Cluster
 # First party modules #
 from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
-from plumbing.common import natural_sort, which
+from plumbing.common import natural_sort, which, split_thousands
 from plumbing.timer import Timer
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
@@ -99,7 +99,7 @@ class Analysis(object):
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
-            print "Using: %i genes" % len(self.blast_db)
+            print "Using: %i genes" % split_thousands(len(self.blast_db))
             print "--> STEP 2: Similarity search against all genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()
@@ -124,7 +124,7 @@ class Analysis(object):
     def clusters(self):
         """A list of Clusters. See http://bioops.info/2011/03/mcl-a-cluster-algorithm-for-graphs/"""
         if not self.p.clusters.exists:
-            print "Using results from %i hits" % len(self.scores)
+            print "Using results from %i hits" % split_thousands(len(self.scores))
             print "--> STEP 4: Running the MCL clustering"
             self.p.bit_scores.writelines(k[0]+'\t'+k[1]+'\t'+v+'\n' for k,v in self.scores.items())
             sh.mcxload("-abc", self.p.bit_scores, "--stream-mirror", "--stream-neg-log10", "-stream-tf", "ceil(200)", "-o", self.p.network, "-write-tab", self.p.dictionary)
@@ -145,7 +145,9 @@ class Analysis(object):
 
     #-------------------------------------------------------------------------#
     def make_trees(self):
-        pass
+        for c in self.best_clusters:
+            print "Building tree for cluster '%s'..." % c.name
+            self.timer.print_elapsed()
 
     def save_count_table(self):
         self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')

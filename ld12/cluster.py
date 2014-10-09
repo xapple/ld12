@@ -85,10 +85,9 @@ class Cluster(object):
         """The tree built with raxml"""
         tree = FilePath(self.alignment.prefix_path + '.tree')
         if not tree.exists:
-            print "Building tree for cluster '%s'..." % self.name
             self.alignment.build_tree(tree,
                                       seq_type = self.analysis.seq_type,
-                                      num_threads = self.analysis.num_threads)
+                                      num_threads = self.analysis.num_threads + 2)
         return tree
 
     @property
