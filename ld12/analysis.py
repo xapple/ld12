@@ -14,7 +14,7 @@ from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
 from plumbing.common import natural_sort, which
 from plumbing.timer import Timer
-from seqsearch import SeqSearch
+from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
 
 # Third party modules #
@@ -76,7 +76,7 @@ class Analysis(object):
         db = BLASTdb(self.p.all_fasta, self.seq_type)
         if not self.p.all_nin and not self.p.all_pin:
             print "--> STEP 1: Building BLASTable database with all genes..."
-            shell_output('zcat %s > %s' % (' '.join(genomes.values()), db))
+            shell_output('gunzip -c %s > %s' % (' '.join(genomes.values()), db))
             assert len(db) == sum(map(len,genomes.values()))
             db.makeblastdb()
             self.timer.print_elapsed()
@@ -93,13 +93,14 @@ class Analysis(object):
     @property_cached
     def search(self):
         """The sequence similarity search to be run"""
-        return SeqSearch(input_fasta = self.blast_db,
-                         seq_type    = self.seq_type,
-                         database    = self.blast_db,
-                         algorithm   = "blast",
-                         num_threads = self.num_threads,
-                         filtering   = self.filtering,
-                         params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
+        return ParallelSeqSearch(
+              input_fasta = self.blast_db,
+              seq_type    = self.seq_type,
+              database    = self.blast_db,
+              algorithm   = "blast",
+              num_threads = self.num_threads,
+              filtering   = self.filtering,
+              params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
 
     @property
     def search_results(self):
@@ -107,7 +108,7 @@ class Analysis(object):
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
-            print "Using: %i genes" + len(self.blast_db)
+            print "Using: %i genes" % len(self.blast_db)
             print "--> STEP 2: Similarity search against all genes"
             self.search.run()
             self.timer.print_elapsed()
