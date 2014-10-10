@@ -155,7 +155,7 @@ class Analysis(object):
 
     @property_cached
     def count_table(self):
-        """Return a dataframe with genomes as columns and clusters as rows"""
+        """Return a dataframe with genomes as rows and clusters as columns"""
         result = defaultdict(lambda: defaultdict(int))
         for cluster in self.clusters:
             for gene in cluster.genes:

@@ -22,6 +22,7 @@ class Cluster(object):
     /filtered_genes.fasta
     /filtered_genes.muscle
     /filtered_genes.aln
+    /tree/
     """
 
     def __repr__(self): return '<%s object number %i>' % (self.__class__.__name__, self.num)
@@ -45,7 +46,7 @@ class Cluster(object):
 
     @property
     def counts(self):
-        return self.analysis.count_table.loc[self.name]
+        return self.analysis.count_table[self.name]
 
     @property
     def score(self):
@@ -86,8 +87,11 @@ class Cluster(object):
         tree = FilePath(self.alignment.prefix_path + '.tree')
         if not tree.exists:
             self.alignment.build_tree(tree,
-                                      seq_type = self.analysis.seq_type,
-                                      num_threads = self.analysis.num_threads + 2)
+                                      seq_type    = self.analysis.seq_type,
+                                      num_threads = self.analysis.num_threads,
+                                      free_cores  = 0,
+                                      new_path    = self.p.tree_dir,
+                                      keep_dir    = True)
         return tree
 
     @property
