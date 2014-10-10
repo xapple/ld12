@@ -143,6 +143,14 @@ class Analysis(object):
         self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
         return self.clusters[0:50]
 
+    @property_cached
+    def ref_tree(self):
+        """A reference tree built with a number of ribosomal proteins (not 16S) to
+        be used when comparing other trees to it."""
+        # Get the ribosomal genes #
+        self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
+        return self.clusters[0:50]
+
     #-------------------------------------------------------------------------#
     def make_trees(self):
         for c in self.best_clusters:
