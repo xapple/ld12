@@ -141,6 +141,7 @@ class Analysis(object):
         clusters = [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
         clusters = sorted(clusters, key=lambda x: x.score, reverse=True)
         return clusters
+        # len([c for c in a.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30])
 
     @property_cached
     def best_clusters(self):

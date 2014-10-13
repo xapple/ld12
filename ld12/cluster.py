@@ -91,7 +91,7 @@ class Cluster(object):
     @property
     def tree(self):
         """The tree built with raxml"""
-        tree = FilePath(self.alignment.prefix_path + '.tree')
+        tree = FilePath(self.p.tree_dir + 'RAxML_bestTree.tree')
         if not tree.exists:
             self.alignment.build_tree(new_path    = self.p.tree_dir,
                                       seq_type    = self.analysis.seq_type,
