@@ -8,11 +8,12 @@ from collections import defaultdict
 # Internal modules #
 from ld12 import genomes
 from ld12.cluster import Cluster
+from ld12.ribosomal import Ribosomal
 
 # First party modules #
 from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
-from plumbing.common import natural_sort, which, split_thousands
+from plumbing.common import which, split_thousands
 from plumbing.timer import Timer
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
@@ -36,6 +37,7 @@ class Analysis(object):
     /mcl/dictionary.tab
     /mcl/clusters.txt
     /user_outputs/count_table.tsv
+    /user_outputs/ribo_table.tsv
     /clusters/
     """
 
@@ -66,6 +68,8 @@ class Analysis(object):
         else: self.num_threads = int(num_threads)
         # Time the pipeline execution #
         self.timer = Timer()
+        # Add the extra ribosomal cluster generation stuff #
+        self.ribosomal = Ribosomal(self)
 
     @property_cached
     def blast_db(self):
@@ -133,34 +137,28 @@ class Analysis(object):
             print "Got %i clusters" % len(self.p.clusters)
             self.timer.print_elapsed()
         # Make the clusters #
-        return [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
+        clusters = [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
+        clusters = sorted(clusters, key=lambda x: x.score, reverse=True)
+        return clusters
 
     @property_cached
     def best_clusters(self):
         """Subset of self.clusters. We want to find the clusters that have exactly one
         member in each of the genomes. Some genomes are partial so we will be more
         flexible on those ones."""
-        self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
         return self.clusters[0:50]
 
-    @property_cached
-    def ref_tree(self):
-        """A reference tree built with a number of ribosomal proteins (not 16S) to
-        be used when comparing other trees to it."""
-        # Get the ribosomal genes #
-        self.clusters = sorted(self.clusters, key=lambda x: x.score, reverse=True)
-        return self.clusters[0:50]
-
-    #-------------------------------------------------------------------------#
     def make_trees(self):
-        for c in self.best_clusters:
+        """If you access a tree it will be built, but as it takes time,
+        let's all do them together now in a non-lazy way."""
+        for i, c in enumerate(self.best_clusters):
             print "Building tree for cluster '%s'..." % c.name
+            print "Cluster %i out of %i with %i genes (%i filtered) and a score of %i" % \
+                  (i+1, len(self.best_clusters)+1, len(c.genes), len(c.filtered_genes), c.score)
             print c.tree
             self.timer.print_elapsed()
 
-    def save_count_table(self):
-        self.count_table.to_csv(str(self.p.tsv), sep='\t', encoding='utf-8')
-
+    #-------------------------------------------------------------------------#
     @property_cached
     def count_table(self):
         """Return a dataframe with genomes as rows and clusters as columns"""
@@ -168,11 +166,16 @@ class Analysis(object):
         for cluster in self.clusters:
             for gene in cluster.genes:
                 result[cluster.name][gene.genome.name] += 1
-        result = pandas.DataFrame(result, dtype=int)
-        result = result.reindex_axis(sorted(result.index, key=natural_sort))
-        result = result.reindex_axis(sorted(result.columns, key=natural_sort), axis='columns')
+        result = pandas.DataFrame(result)
+        result = result.reindex_axis(result.sum(axis=1).order(ascending=False).index)
+        result = result.reindex_axis([c.name for c in self.clusters], axis='columns')
         result = result.fillna(0)
+        result = result.astype(int)
         return result
+
+    def save_count_table(self):
+        """Save the dataframe above in a CSV file"""
+        self.count_table.to_csv(str(self.p.count_tsv), sep='\t', encoding='utf-8')
 
     @property
     def percent_filtered(self):

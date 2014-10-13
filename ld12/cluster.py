@@ -23,9 +23,11 @@ class Cluster(object):
     /filtered_genes.muscle
     /filtered_genes.aln
     /tree/
+    /tree/RAxML_bestTree.tree
     """
 
-    def __repr__(self): return '<%s object number %i>' % (self.__class__.__name__, self.num)
+    def __repr__(self): return '<%s object "%s">' % (self.__class__.__name__, self.name)
+    def __len__(self): return len(self.genes)
 
     def __init__(self, num, line, analysis, name=None):
         # Basic params #
@@ -34,7 +36,7 @@ class Cluster(object):
         # All the genes #
         self.genes = [genes[x] for x in frozenset(line.split())]
         # Optional #
-        self.name = "cluster_%i" % num if name is None else name
+        self.name = "cluster_%s" % num if name is None else name
         # Paths #
         self.base_dir = self.analysis.p.clusters_dir + self.name + '/'
         self.p = AutoPaths(self.base_dir, self.all_paths)

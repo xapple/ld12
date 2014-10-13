@@ -7,6 +7,7 @@ from argparse import RawTextHelpFormatter
 # Internal modules #
 import ld12
 
+###############################################################################
 # Make a shell arguments parser #
 doc_version = "ld12 version %s" % (ld12.__version__)
 desc = doc_version + "\n\n"

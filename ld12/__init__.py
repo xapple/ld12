@@ -8,10 +8,12 @@ import sys, os, glob
 
 # Internal modules #
 from ld12.genome import Genome
+from ld12.family import Family
 
 # Third party modules #
 import pandas
 
+###############################################################################
 # Find the data dir #
 self = sys.modules[__name__]
 module_dir = os.path.dirname(self.__file__) + '/'
@@ -34,3 +36,8 @@ for g in genomes.values(): g.info = metadata.loc[int(g.short_prefix)]
 for line in open(data_dir + 'annotations.tsv'):
     gene_id, annotation = line.strip('\n').split('\t')
     genes[gene_id].annotation = annotation
+
+# Make the genome families #
+families = set([G.info['group'] for G in genomes.values()])
+families = [Family(f, [G for G in genomes.values() if G.info['group'] == f]) for f in families]
+families = dict((f.name, f) for f in families)
