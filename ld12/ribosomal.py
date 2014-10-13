@@ -32,6 +32,7 @@ class Ribosomal(object):
             current_genes = ' '.join(g.name for g in current_genes)
             name = "cluster_r%i" % i
             clusters.append(Cluster(i, current_genes, self.analysis, name))
+        clusters = sorted(clusters, key=lambda x: x.score, reverse=True)
         return clusters
 
     @property_cached
@@ -49,11 +50,11 @@ class Ribosomal(object):
         """If you access a tree it will be built, but as it takes time,
         let's all do them together now in a non-lazy way."""
         for i, c in enumerate(self.clusters):
-            print "Building tree for ribosomal cluster '%s'..." % c.name
-            print "Cluster %i out of %i with %i genes (%i filtered) and a score of %i" % \
+            print "* Building tree for ribosomal cluster '%s'..." % c.name
+            print "* Cluster %i out of %i with %i genes (%i filtered) and a score of %i" % \
                   (i+1, len(self.clusters)+1, len(c.genes), len(c.filtered_genes), c.score)
             print c.tree
-            self.timer.print_elapsed()
+            self.analysis.timer.print_elapsed()
 
     #-------------------------------------------------------------------------#
     @property_cached
