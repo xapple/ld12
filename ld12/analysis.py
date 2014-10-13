@@ -38,6 +38,7 @@ class Analysis(object):
     /mcl/clusters.txt
     /user_outputs/count_table.tsv
     /user_outputs/ribo_table.tsv
+    /user_outputs/family_table.tsv
     /clusters/
     """
 

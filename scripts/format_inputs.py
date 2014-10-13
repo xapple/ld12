@@ -1,5 +1,6 @@
 """We explore the client given inputs, check for problems,
-then format them and store them in the repository as immutable text files"""
+then format them and store them in the repository as immutable artifacts
+(compressed text files)"""
 
 import inspect, os, glob, pandas
 from fasta import FASTA

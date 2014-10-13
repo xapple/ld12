@@ -17,6 +17,7 @@ class Genome(FASTA):
         self.path = path
         self.name = self.short_prefix
         self.info = None # Filled in by the __init__.py
+        self.family = None # Filled in by the family.py
 
     @property_cached
     def genes(self):

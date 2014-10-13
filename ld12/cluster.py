@@ -29,7 +29,7 @@ class Cluster(object):
     def __repr__(self): return '<%s object "%s">' % (self.__class__.__name__, self.name)
     def __len__(self): return len(self.genes)
 
-    def __init__(self, num, line, analysis, name=None):
+    def __init__(self, num, line, analysis, name=None, filter=True):
         # Basic params #
         self.num = num
         self.analysis = analysis
@@ -45,6 +45,11 @@ class Cluster(object):
         for gene in self.genes: self.genomes[gene.genome] += 1
         # Only one gene per genome #
         self.filtered_genes = [(set(G.genes.values()) & set(self.genes)).pop() for G in self.genomes]
+
+    @property
+    def families(self):
+        """How many families are represented by this cluster"""
+        return set([g.genome.family for g in self.genes])
 
     @property
     def counts(self):
