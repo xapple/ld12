@@ -15,6 +15,7 @@ class Genome(FASTA):
 
     def __init__(self, path):
         self.path = path
+        self.name = self.short_prefix
         self.info = None # Filled in by the __init__.py
         self.family = None # Filled in by the family.py
 
