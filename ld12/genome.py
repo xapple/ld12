@@ -19,7 +19,8 @@ class Genome(FASTA):
         self.family = None # Filled in by the family.py
 
     @property
-    def name(self): return self.info['taxon']
+    def label(self): return self.info['taxon']
+
     @property_cached
     def genes(self):
         return dict((seq.id, Gene(seq, self)) for seq in self)
