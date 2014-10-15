@@ -150,6 +150,14 @@ class Analysis(object):
         reoresentative per family and the total count of genes no more than 30."""
         return [c for c in self.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30]
 
+    @property_cached
+    def fresh_clusters(self):
+        """Subset of self.clusters. We want to find the clusters that have no marine
+        organisms whatsoever, but have one or more freshwater organism."""
+        return [c for c in self.clusters if
+                len(set(g.genome for g in c.genes if g.genome.fresh)) > 1 and
+                len(set(g.genome for g in c.genes if not g.genome.fresh)) == 0]
+
     def make_trees(self):
         """If you access a tree it will be built, but as it takes time,
         let's all do them together now in a non-lazy way."""
