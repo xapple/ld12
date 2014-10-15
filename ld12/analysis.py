@@ -141,14 +141,14 @@ class Analysis(object):
         clusters = [Cluster(i, line, self) for i, line in enumerate(self.p.clusters)]
         clusters = sorted(clusters, key=lambda x: x.score, reverse=True)
         return clusters
-        # len([c for c in a.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30])
 
     @property_cached
     def best_clusters(self):
         """Subset of self.clusters. We want to find the clusters that have exactly one
-        member in each of the genomes. Some genomes are partial so we will be more
-        flexible on those ones."""
-        return self.clusters[0:50]
+        member in each of the genomes. Some genomes are partial so we could be more
+        flexible on those ones. The final selection strategy is there is at least one
+        reoresentative per family and the total count of genes no more than 30."""
+        return [c for c in self.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30]
 
     def make_trees(self):
         """If you access a tree it will be built, but as it takes time,
