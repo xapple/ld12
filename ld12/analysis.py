@@ -100,7 +100,7 @@ class Analysis(object):
 
     @property
     def search_results(self):
-        """For every gene, search against a database of all gene return the best hits
+        """For every gene, search against a database of all gene, return the best hits
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
@@ -147,7 +147,7 @@ class Analysis(object):
         """Subset of self.clusters. We want to find the clusters that have exactly one
         member in each of the genomes. Some genomes are partial so we could be more
         flexible on those ones. The final selection strategy is there is at least one
-        reoresentative per family and the total count of genes no more than 30."""
+        representative per family and the total count of genes is no more than 30."""
         return [c for c in self.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30]
 
     @property_cached

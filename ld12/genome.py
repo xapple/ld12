@@ -20,7 +20,9 @@ class Genome(FASTA):
         self.family = None # Filled in by the family.py
 
     @property
-    def label(self): return self.info['taxon']
+    def label(self):
+        """This will return names such as 'HTCC1062' instead of '637000058'"""
+        return self.info['taxon']
 
     @property_cached
     def genes(self):
@@ -34,7 +36,7 @@ class Genome(FASTA):
     @property
     def long_name(self):
         """A more descriptive name"""
-        return "genome " + self.name + " of family '" + self.info['group'] + "'"
+        return "Genome '" + self.label + "'' of family '" + self.info['group'] + "'"
 
     @property
     def fresh(self):

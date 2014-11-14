@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
       name             = 'ld12',
-      version          = '0.0.1',
+      version          = '0.0.2',
       description      = 'Analysis for LD12 genomes.',
       long_description = open('README.md').read(),
       license          = 'MIT',
