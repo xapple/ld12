@@ -16,7 +16,7 @@ import ete2
 class Master(Cluster):
     """A master alignment and corresponding tree to be used to compare against
     other trees. A special cluster combining all the ribosomal family clusters in
-        a concatenation."""
+    a concatenation."""
 
     def __init__(self, ribosomal):
         # Links
@@ -58,7 +58,7 @@ class Master(Cluster):
         # Load it #
         tree = ete2.Tree(self.tree)
         # Root it #
-        five = tree.search_nodes(name='v')
+        five = tree.search_nodes(name='V')
         assert len(five) == 1
         tree.set_outgroup(five[0])
         tree.ladderize()

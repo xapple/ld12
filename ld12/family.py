@@ -8,7 +8,8 @@
 
 ###############################################################################
 class Family(object):
-    """A collection of genomes that all share the same family."""
+    """A collection of genomes that all share the same family.
+    Families are ('Ib', 'II', 'Ia', 'V', 'IIIa', 'Ic', 'IIIb')"""
 
     def __repr__(self): return '<%s object "%s" with %i genomes>' % \
         (self.__class__.__name__, self.name, len(self.genomes))

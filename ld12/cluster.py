@@ -127,7 +127,7 @@ class Cluster(object):
             leaf.add_features(gene=gene)
             leaf.add_features(family=gene.genome.family.name)
         # Root it #
-        five = tree.search_nodes(family='v')
+        five = tree.search_nodes(family='V')
         assert len(five) == 1
         tree.set_outgroup(five[0])
         tree.ladderize()

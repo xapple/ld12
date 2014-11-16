@@ -10,6 +10,7 @@ from ld12 import genomes, families
 from ld12.cluster import Cluster
 from ld12.ribosomal import Ribosomal
 from ld12.comparison import Comparison
+from ld12.againstnr import AgainstNR
 
 # First party modules #
 from plumbing.autopaths import AutoPaths
@@ -40,6 +41,8 @@ class Analysis(object):
     /user_outputs/count_table.tsv
     /user_outputs/ribo_table.tsv
     /user_outputs/family_table.tsv
+    /user_outputs/uncollapsible_stats.tsv
+    /user_outputs/mismatching_stats.tsv
     /clusters/
     """
 
@@ -74,6 +77,8 @@ class Analysis(object):
         self.ribosomal = Ribosomal(self)
         # Add the comparison statistics stuff #
         self.comparison = Comparison(self)
+        # Add the blast against NR #
+        self.againstnr = AgainstNR(self)
 
     @property_cached
     def blast_db(self):

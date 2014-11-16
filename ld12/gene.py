@@ -7,7 +7,7 @@ import re
 
 ###############################################################################
 class Gene(object):
-    """A sequence with an ID associated."""
+    """A DNA sequence with an ID associated and belonging to a genome."""
 
     def __repr__(self): return '<%s object %s>' % (self.__class__.__name__, self.name)
     def __str__(self): return str(self.seq.seq)
