@@ -29,6 +29,7 @@ class Cluster(object):
 
     def __repr__(self): return '<%s object "%s">' % (self.__class__.__name__, self.name)
     def __len__(self): return len(self.genes)
+    def __iter__(self): return iter(self.genes)
 
     def __init__(self, num, line, analysis, name=None):
         # Basic params #
@@ -49,12 +50,12 @@ class Cluster(object):
 
     @property
     def families(self):
-        """How many families are represented by this cluster"""
+        """Which families are represented by this cluster"""
         return set([g.genome.family for g in self.filtered_genes])
 
     @property
     def counts(self):
-        """Before filtering how many genes in each genomes for this cluster"""
+        """Before filtering, how many genes in each genomes for this cluster"""
         return self.analysis.count_table[self.name]
 
     @property
@@ -115,8 +116,23 @@ class Cluster(object):
 
     @property_cached
     def tree_ete(self):
-        """The tree as an object in python memory from ETE"""
-        return ete2.Tree(self.tree)
+        """The tree as an object in python memory from ETE2
+        We can add attributes to the leaves useful for the comparisons
+        that we perform later on."""
+        # Load it #
+        tree = ete2.Tree(self.tree)
+        # Add info to leaves #
+        for leaf in tree:
+            gene = genes[leaf.name]
+            leaf.add_features(gene=gene)
+            leaf.add_features(family=gene.genome.family.name)
+        # Root it #
+        five = tree.search_nodes(family='v')
+        assert len(five) == 1
+        tree.set_outgroup(five[0])
+        tree.ladderize()
+        # Return results #
+        return tree
 
     def print_tree(self):
         """Render it as ASCII on your terminal"""

@@ -1,12 +1,12 @@
 # Built-in modules #
 
 # Internal modules #
+from ld12 import families
 
 # First party modules #
 from plumbing.cache import property_cached
 
 # Third party modules #
-import dendropy
 
 ###############################################################################
 class Comparison(object):
@@ -22,23 +22,53 @@ class Comparison(object):
     3) If there is a popular alternative branching pattern, draw it in the supplementary and add as numbers how many clusters had this exact alternative branching."""
 
     def __init__(self, analysis):
+        # Save attributes #
         self.analysis = analysis
+        # The reference tree #
+        self.analysis.ribosomal.master.tree_ete
 
     @property
     def ref_tree(self, analysis): return self.analysis.ribosomal.master.tree_dp
 
     @property_cached
-    def collapsable(self, analysis):
+    def collapsible(self):
         """Clusters that have strict coherence within all the seven families
         (i.e. all genes from every given family are monophyletic)"""
+        # We are going to maintain two lists #
+        collapsible = []
+        uncollapsible = []
+        # Check every one of the good clusters #
         for c in self.analysis.best_clusters:
-            pass
+            for f in families.values():
+                if len([g for g in c if g.genome.family == f]) == 1: continue
+                if c.tree_ete.check_monophyly(values=[f.name], target_attr="family")[0]: continue
+                uncollapsible += c
+                break
+            else: collapsible += c
+        # We are interested only in the collapsible #
+        return collapsible
 
     @property_cached
     def matching(self, analysis):
-        """Clusters that have the"""
-        pass
-
-    @property_cached
-    def mismatching(self, analysis):
-        pass
+        """Clusters that are collapsible and that have the same topology
+        as the ribosomal master tree given that we collapse each family
+        into one leaf."""
+        # We are going to maintain two lists #
+        matching = []
+        mismatching = []
+        # Check every one of the collapsible clusters #
+        for c in self.collapsible:
+            # Make a copy #
+            tree = c.tree.copy(method='deepcopy')
+            # Collapse families into one leaf #
+            for f in families.values():
+                fam_node = tree.get_common_ancestor(tree.search_nodes(family=f.name))
+                for leaf in fam_node: assert leaf.family == f.name
+                for child in fam_node.children: fam_node.remove_child(child)
+                fam_node.name = f.name
+            # Compare with rib master #
+            rf, max_rf, common_leaves, parts_t1, parts_t2 = tree.robinson_foulds()
+            if max_rf == 0: matching += c
+            else:           mismatching += c
+        # We are interested only in the matching #
+        return matching

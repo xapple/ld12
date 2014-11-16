@@ -10,6 +10,7 @@ from plumbing.cache import property_cached
 from plumbing.autopaths import AutoPaths
 
 # Third party modules #
+import ete2
 
 ###############################################################################
 class Master(Cluster):
@@ -48,3 +49,18 @@ class Master(Cluster):
         print "* Building tree for master ribosomal alignment"
         print self.tree
         self.analysis.timer.print_elapsed()
+
+    @property_cached
+    def tree_ete(self):
+        """The tree as an object in python memory from ETE2
+        We can add attributes to the leaves useful for the comparisons
+        that we perform later on."""
+        # Load it #
+        tree = ete2.Tree(self.tree)
+        # Root it #
+        five = tree.search_nodes(name='v')
+        assert len(five) == 1
+        tree.set_outgroup(five[0])
+        tree.ladderize()
+        # Return results #
+        return tree
