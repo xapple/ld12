@@ -14,4 +14,4 @@ else:                        out_dir = home + "/LD12/results"
 
 # Do it #
 a = Analysis(out_dir=out_dir)
-a.make_trees()
+#a.make_trees()

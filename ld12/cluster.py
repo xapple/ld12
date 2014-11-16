@@ -7,9 +7,10 @@ from ld12 import genes
 # First party modules #
 from fasta import FASTA, AlignedFASTA
 from plumbing.autopaths import AutoPaths, FilePath
+from plumbing.cache import property_cached
 
 # Third party modules #
-import ete2
+import ete2, dendropy
 from Bio import Phylo
 
 ###############################################################################
@@ -29,7 +30,7 @@ class Cluster(object):
     def __repr__(self): return '<%s object "%s">' % (self.__class__.__name__, self.name)
     def __len__(self): return len(self.genes)
 
-    def __init__(self, num, line, analysis, name=None, filter=True):
+    def __init__(self, num, line, analysis, name=None):
         # Basic params #
         self.num = num
         self.analysis = analysis
@@ -49,15 +50,16 @@ class Cluster(object):
     @property
     def families(self):
         """How many families are represented by this cluster"""
-        return set([g.genome.family for g in self.genes])
+        return set([g.genome.family for g in self.filtered_genes])
 
     @property
     def counts(self):
+        """Before filtering how many genes in each genomes for this cluster"""
         return self.analysis.count_table[self.name]
 
     @property
     def score(self):
-        """Given the genome counts, what is the single-copy custom likelihood score"""
+        """Given the genome counts, what is our single-copy custom likelihood score"""
         score = 0
         for genome, count in self.genomes.items():
             if   count == 0: score +=  -5 if genome.partial else -20
@@ -74,7 +76,7 @@ class Cluster(object):
         fasta = FASTA(self.p.fasta)
         if not fasta:
             fasta.create()
-            for gene in self.filtered_genes: fasta.add_str(str(gene), name=gene.long_name)
+            for gene in self.filtered_genes: fasta.add_str(str(gene), name=gene.name)
             fasta.close()
         return fasta
 
@@ -85,12 +87,12 @@ class Cluster(object):
         alignment = AlignedFASTA(self.p.aln)
         if not alignment:
             self.fasta.align(muscle)
-            muscle.gblocks(self.p.aln, seq_type = self.analysis.seq_type)
+            muscle.gblocks(self.p.aln, seq_type=self.analysis.seq_type)
         return alignment
 
     @property
     def tree(self):
-        """The tree built with raxml"""
+        """The path to the tree built with raxml"""
         tree = FilePath(self.p.tree_dir + 'RAxML_bestTree.tree')
         if not tree.exists:
             self.alignment.build_tree(new_path    = self.p.tree_dir,
@@ -100,12 +102,26 @@ class Cluster(object):
                                       keep_dir    = True)
         return tree
 
-    @property
-    def phylogeny(self):
-        """We can parse it with biopython"""
-        return Phylo.read(self.tree.path, 'newick')
+    @property_cached
+    def tree_dp(self):
+        """The tree as an object in python memory from dendropy
+        We can modify the leaves to link to their Gene object"""
+        return dendropy.Tree.get_from_path(self.tree, 'newick')
+
+    @property_cached
+    def tree_biop(self):
+        """The tree as an object in python memory from biopython"""
+        return Phylo.read(self.tree, 'newick')
+
+    @property_cached
+    def tree_ete(self):
+        """The tree as an object in python memory from ETE"""
+        return ete2.Tree(self.tree)
+
+    def print_tree(self):
+        """Render it as ASCII on your terminal"""
+        print self.tree_dp.as_ascii_plot()
 
     def draw_tree(self):
         """120 pixels per branch length unit"""
-        t = ete2.Tree(self.tree.contents)
-        t.render(self.tree.replace_extension('pdf'))
+        self.tree_ete.render(self.tree.replace_extension('pdf'))

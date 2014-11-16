@@ -27,6 +27,8 @@ genomes = dict((G.name, G) for G in genomes)
 
 # Iterate over all genes #
 genes = dict((g.name, g) for G in genomes.values() for g in G.genes.values())
+assert len(genes) == sum(map(len,(G.genes for G in genomes.values())))
+assert len(genes) == len(set(g.name for g in genes.values()))
 
 # Add the metadata #
 metadata = pandas.io.parsers.read_csv(data_dir + 'metadata.tsv', sep='\t', index_col=0, encoding='utf-8')

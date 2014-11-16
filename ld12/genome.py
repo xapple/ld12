@@ -36,9 +36,14 @@ class Genome(FASTA):
     @property
     def long_name(self):
         """A more descriptive name"""
-        return "Genome '" + self.label + "'' of family '" + self.info['group'] + "'"
+        return "Genome '%s' (%s) of family '%s'" % (self.name, self.label, self.info['group'])
 
     @property
     def fresh(self):
-        """Is this organism a freshwater orgiansm."""
+        """Is this organism a freshwater orgiansm?"""
         return True if self.info['mf'] == 'f' else False
+
+    @property
+    def marine(self):
+        """Is this organism a marine orgiansm?"""
+        return not self.fresh

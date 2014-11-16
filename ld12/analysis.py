@@ -6,9 +6,10 @@ import os, multiprocessing
 from collections import defaultdict
 
 # Internal modules #
-from ld12 import genomes
+from ld12 import genomes, families
 from ld12.cluster import Cluster
 from ld12.ribosomal import Ribosomal
+from ld12.comparison import Comparison
 
 # First party modules #
 from plumbing.autopaths import AutoPaths
@@ -71,6 +72,8 @@ class Analysis(object):
         self.timer = Timer()
         # Add the extra ribosomal cluster generation stuff #
         self.ribosomal = Ribosomal(self)
+        # Add the comparison statistics stuff #
+        self.comparison = Comparison(self)
 
     @property_cached
     def blast_db(self):
@@ -148,7 +151,8 @@ class Analysis(object):
         member in each of the genomes. Some genomes are partial so we could be more
         flexible on those ones. The final selection strategy is there is at least one
         representative per family and the total count of genes is no more than 30."""
-        return [c for c in self.clusters if len(set(g.genome.family for g in c.genes)) > 5 and len(c.genes) < 30]
+        return [c for c in self.clusters if len(c.families) == len(families)
+                                        and len(c.genes)     < 30]
 
     @property_cached
     def fresh_clusters(self):
@@ -156,7 +160,7 @@ class Analysis(object):
         organisms whatsoever, but have one or more freshwater organism."""
         return [c for c in self.clusters if
                 len(set(g.genome for g in c.genes if g.genome.fresh)) > 1 and
-                len(set(g.genome for g in c.genes if not g.genome.fresh)) == 0]
+                len(set(g.genome for g in c.genes if g.genome.marine)) == 0]
 
     def make_trees(self):
         """If you access a tree it will be built, but as it takes time,
