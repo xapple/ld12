@@ -1,4 +1,5 @@
 # Built-in modules #
+import warnings
 from collections import defaultdict
 
 # Internal modules #
@@ -92,10 +93,26 @@ class Cluster(object):
         return alignment
 
     @property
+    def gaps_in_alignment(self):
+        """We run into a problem sometimes when gblocks filters out
+        all nucleotides from a sequences leaving only gaps.
+        This makes raxml very unhappy. This function checks if any such
+        sequences exists with only gaps"""
+        for read in self.alignment:
+            if read.seq.count('-') == len(read.seq): return True
+        return False
+
+    @property
     def tree(self):
         """The path to the tree built with raxml"""
         tree = FilePath(self.p.tree_dir + 'RAxML_bestTree.tree')
         if not tree.exists:
+            # Check we can do it #
+            if self.gaps_in_alignment:
+                message = "Can't build a tree for cluster %i because of gaps. Skipping."
+                warnings.warn(message % self.num)
+                return None
+            # Do it #
             self.alignment.build_tree(new_path    = self.p.tree_dir,
                                       seq_type    = self.analysis.seq_type,
                                       num_threads = self.analysis.num_threads,

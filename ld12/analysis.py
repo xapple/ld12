@@ -155,9 +155,11 @@ class Analysis(object):
         """Subset of self.clusters. We want to find the clusters that have exactly one
         member in each of the genomes. Some genomes are partial so we could be more
         flexible on those ones. The final selection strategy is there is at least one
-        representative per family and the total count of genes is no more than 30."""
+        representative per family and the total count of genes is no more than 30.
+        We also kick out clusters with sequences presenting only gaps."""
         return [c for c in self.clusters if len(c.families) == len(families)
                                         and len(c.genes)     < 30]
+        #                               and not c.gaps_in_alignment]
 
     @property_cached
     def fresh_clusters(self):
