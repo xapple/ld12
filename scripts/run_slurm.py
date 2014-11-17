@@ -12,7 +12,7 @@
 #SBATCH -d singleton
 
 # Modules #
-import time, platform, socket, os
+import dateutil, datetime, platform, socket, os
 from ld12.analysis import Analysis
 
 # Constants #
@@ -23,8 +23,16 @@ home = os.environ['HOME'] + '/'
 if host.startswith('milou'): out_dir = home + "/proj/b2013274/results"
 else:                        out_dir = home + "/LD12/results"
 
+# Message #
+now = datetime.datetime.now(dateutil.tz.tzlocal())
+now = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+print "SLURM: start at {0} on {1}".format(now, platform.node())
+
 # Do it #
-print "SLURM: start at {0} on {1}".format(time.asctime(), platform.node())
 a = Analysis(out_dir=out_dir)
 a.make_trees()
-print "SLURM: end at {0}".format(time.asctime())
+
+# End #
+now = datetime.datetime.now(dateutil.tz.tzlocal())
+now = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+print "SLURM: end at {0}".format(now)

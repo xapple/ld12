@@ -1,10 +1,13 @@
 # Built-in modules #
+import string
+from collections import default_dict
 
 # Internal modules #
 from ld12 import families
 
 # First party modules #
 from plumbing.cache import property_cached
+from plumbing.common import pad_with_whitespace, mirror_string, concatenate_by_line
 
 # Third party modules #
 import pandas
@@ -58,9 +61,10 @@ class Comparison(object):
         """Taking only clusters that are collapsible, we can ask: do they
         match the same topology as the ribosomal master tree ? This can be
         done since we can collapse each family into one leaf."""
-        # We are going to maintain two lists #
+        # We are going to maintain two lists and one string #
         matching = []
         mismatching = []
+        mismatching_stats = ""
         # Check every one of the collapsible clusters #
         for c in self.collapsible:
             # Make a copy #
@@ -78,14 +82,28 @@ class Comparison(object):
             rf, max_rf, common_leaves, parts_t1, parts_t2 = tree.robinson_foulds(ref)
             print c, rf, max_rf, common_leaves, parts_t1, parts_t2
             if rf == 0: matching += c
-            else:       mismatching += c
+            else:
+            # Let's collect some mismatching statistics #
+                mismatching += c
+                mismatching_stats += 'Tree from cluster %i is mismatching:\n' % c.num
+                ref_string = ref.get_ascii(show_internal=False)
+                tree_string = tree.get_ascii(show_internal=False)
+                ref_string = pad_with_whitespace(ref_string)
+                tree_string = pad_with_whitespace(tree_string)
+                tree_string = mirror_string(tree_string)
+                tree_string = tree_string.translate(string.maketrans("/\\", "\\/"))
+                mismatching_stats += concatenate_by_line(ref_string, mirror_string(tree_string))
+                mismatching_stats += "Robinson–Foulds metric: %f\n" % rf
+                mismatching_stats += "Max RF: %f\n" % max_rf
         # Return values #
-        return matching, mismatching
+        return matching, mismatching, mismatching_stats
 
     @property
     def matching(self): return self.matches[0]
     @property
     def mismatching(self): return self.matches[1]
+    @property
+    def mismatching_stats(self): return self.matches[2]
 
     #-------------------------------------------------------------------------#
     def uncollapsible_stats(self):
@@ -109,17 +127,11 @@ class Comparison(object):
         result = pandas.DataFrame(result)
         return result
 
+    #-------------------------------------------------------------------------#
     def save_uncollapsible_stats(self):
         """Save the dataframe above in a CSV file"""
         self.uncollapsible_stats.to_csv(str(self.analysis.p.uncollapsible), sep='\t', encoding='utf-8')
 
-    def mismatching_stats(self):
-        """For the trees that mismatch the reference, where do they not
-        correspond?"""
-        result = {}
-        for c in self.uncollapsible:
-            pass
-
     def save_mismatching_stats(self):
         """Save the dataframe above in a CSV file"""
-        self.mismatching_stats.to_csv(str(self.analysis.p.mismatching), sep='\t', encoding='utf-8')
+        self.analysis.p.mismatching.writelines(self.mismatching_stats)
