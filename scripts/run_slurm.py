@@ -10,12 +10,21 @@
 #SBATCH --mail-user lucas.sinclair@me.com
 #SBATCH --mail-type=END
 #SBATCH -d singleton
-import time, platform
-print "SLURM: start at {0} on {1}".format(time.asctime(), platform.node())
 
+# Modules #
+import time, platform, socket, os
 from ld12.analysis import Analysis
-out_dir = "/home/lucass/LD12/results"
+
+# Constants #
+host = socket.gethostname()
+home = os.environ['HOME'] + '/'
+
+# Output path #
+if host.startswith('milou'): out_dir = home + "/proj/b2013274/results"
+else:                        out_dir = home + "/LD12/results"
+
+# Do it #
+print "SLURM: start at {0} on {1}".format(time.asctime(), platform.node())
 a = Analysis(out_dir=out_dir)
 a.make_trees()
-
 print "SLURM: end at {0}".format(time.asctime())
