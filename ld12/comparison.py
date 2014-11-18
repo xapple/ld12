@@ -11,6 +11,7 @@ from plumbing.common import pad_with_whitespace, mirror_lines, concatenate_by_li
 
 # Third party modules #
 import pandas
+from tqdm import tqdm
 
 ###############################################################################
 class Comparison(object):
@@ -38,7 +39,8 @@ class Comparison(object):
         collapsible = []
         uncollapsible = []
         # Check every one of the good clusters #
-        for c in self.analysis.best_clusters:
+        print "Computing which clusters are collasping..."
+        for c in tqdm(self.analysis.best_clusters):
             for f in families.values():
                 if len([g for g in c if g.genome.family == f]) == 1: continue
                 if c.tree_ete.check_monophyly(values=[f.name], target_attr="family")[0]: continue
@@ -63,7 +65,8 @@ class Comparison(object):
         mismatching = []
         mismatching_stats = ""
         # Check every one of the collapsible clusters #
-        for c in self.collapsible:
+        print "Computing which clusters are matching..."
+        for c in tqdm(self.collapsible):
             # Make a copy #
             tree = c.tree_ete.copy(method='deepcopy')
             # Collapse families into one leaf #
