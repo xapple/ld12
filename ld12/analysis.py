@@ -43,6 +43,7 @@ class Analysis(object):
     /user_outputs/family_table.tsv
     /user_outputs/uncollapsible_stats.tsv
     /user_outputs/mismatching_stats.txt
+    /user_outputs/split_stats.txt
     /clusters/
     """
 
@@ -167,8 +168,8 @@ class Analysis(object):
         """Subset of self.clusters. We want to find the clusters that have no marine
         organisms whatsoever, but have one or more freshwater organism."""
         return [c for c in self.clusters if
-                len(set(g.genome for g in c.genes if g.genome.fresh)) > 1 and
-                len(set(g.genome for g in c.genes if g.genome.marine)) == 0]
+                len([g for g in c.genes if g.genome.fresh]) >= 1
+            and len([g for g in c.genes if g.genome.marine]) == 0]
 
     def make_trees(self):
         """If you access a tree it will be built, but as it takes time,
