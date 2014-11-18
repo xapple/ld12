@@ -42,9 +42,9 @@ class Comparison(object):
             for f in families.values():
                 if len([g for g in c if g.genome.family == f]) == 1: continue
                 if c.tree_ete.check_monophyly(values=[f.name], target_attr="family")[0]: continue
-                uncollapsible += c
+                uncollapsible += [c]
                 break
-            else: collapsible += c
+            else: collapsible += [c]
         # Return values #
         return collapsible, uncollapsible
 
@@ -78,10 +78,10 @@ class Comparison(object):
             ref = self.analysis.ribosomal.master.tree_ete
             rf, max_rf, common_leaves, parts_t1, parts_t2 = tree.robinson_foulds(ref)
             print c, rf, max_rf, common_leaves, parts_t1, parts_t2
-            if rf == 0: matching += c
+            if rf == 0: matching += [c]
             else:
             # Let's collect some mismatching statistics #
-                mismatching += c
+                mismatching += [c]
                 mismatching_stats += 'Tree from cluster %i is mismatching:\n' % c.num
                 ref_string = ref.get_ascii(show_internal=False)
                 tree_string = tree.get_ascii(show_internal=False)
