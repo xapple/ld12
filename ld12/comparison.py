@@ -29,9 +29,6 @@ class Comparison(object):
         # Save attributes #
         self.analysis = analysis
 
-    @property
-    def ref_tree(self, analysis): return self.analysis.ribosomal.master.tree_dp
-
     @property_cached
     def collapsing(self):
         """Clusters that have strict coherence within all the seven families
