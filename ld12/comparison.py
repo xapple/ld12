@@ -77,7 +77,6 @@ class Comparison(object):
             # Compare with rib master reference #
             ref = self.analysis.ribosomal.master.tree_ete
             rf, max_rf, common_leaves, parts_t1, parts_t2 = tree.robinson_foulds(ref)
-            print c, rf, max_rf, common_leaves, parts_t1, parts_t2
             if rf == 0: matching += [c]
             else:
             # Let's collect some mismatching statistics #
