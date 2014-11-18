@@ -30,6 +30,8 @@ class Analysis(object):
     Look at the Omnigraffle outline for more information."""
 
     all_paths = """
+    /clusters/
+    /againstnr/
     /blast/all_genes.fasta
     /blast/all_genes.fasta.nin
     /blast/all_genes.fasta.pin
@@ -44,7 +46,6 @@ class Analysis(object):
     /user_outputs/uncollapsible_stats.tsv
     /user_outputs/mismatching_stats.txt
     /user_outputs/split_stats.txt
-    /clusters/
     """
 
     def __repr__(self): return '<%s object with %i genomes>' % \
