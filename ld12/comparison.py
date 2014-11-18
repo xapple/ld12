@@ -7,7 +7,7 @@ from ld12 import families
 
 # First party modules #
 from plumbing.cache import property_cached
-from plumbing.common import pad_with_whitespace, mirror_string, concatenate_by_line
+from plumbing.common import pad_with_whitespace, mirror_lines, concatenate_by_line
 
 # Third party modules #
 import pandas
@@ -90,9 +90,9 @@ class Comparison(object):
                 tree_string = tree.get_ascii(show_internal=False)
                 ref_string = pad_with_whitespace(ref_string)
                 tree_string = pad_with_whitespace(tree_string)
-                tree_string = mirror_string(tree_string)
+                tree_string = mirror_lines(tree_string)
                 tree_string = tree_string.translate(string.maketrans("/\\", "\\/"))
-                mismatching_stats += concatenate_by_line(ref_string, mirror_string(tree_string))
+                mismatching_stats += concatenate_by_line(ref_string, tree_string)
                 mismatching_stats += "Robinson-Foulds metric: %f\n" % rf
                 mismatching_stats += "Max RF: %f\n" % max_rf
         # Return values #
