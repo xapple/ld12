@@ -54,7 +54,7 @@ class Comparison(object):
     def uncollapsible(self): return self.collapsing[1]
 
     @property_cached
-    def matches(self, analysis):
+    def matches(self):
         """Taking only clusters that are collapsible, we can ask: do they
         match the same topology as the ribosomal master tree ? This can be
         done since we can collapse each family into one leaf."""
