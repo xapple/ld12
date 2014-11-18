@@ -10,7 +10,7 @@ from ld12 import genomes, families
 from ld12.cluster import Cluster
 from ld12.ribosomal import Ribosomal
 from ld12.comparison import Comparison
-from ld12.againstnr import AgainstNR
+from ld12.duplications import Duplications
 
 # First party modules #
 from plumbing.autopaths import AutoPaths
@@ -80,7 +80,7 @@ class Analysis(object):
         # Add the comparison statistics stuff #
         self.comparison = Comparison(self)
         # Add the blast against NR #
-        self.againstnr = AgainstNR(self)
+        self.duplications = Duplications(self)
 
     @property_cached
     def blast_db(self):
@@ -114,7 +114,7 @@ class Analysis(object):
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
-            print "Using: %i genes" % split_thousands(len(self.blast_db))
+            print "Using: %s genes" % split_thousands(len(self.blast_db))
             print "--> STEP 2: Similarity search against all genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()

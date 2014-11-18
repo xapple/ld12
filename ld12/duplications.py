@@ -20,12 +20,12 @@ home = os.environ['HOME'] + '/'
 host = socket.gethostname()
 
 # Hardcoded database location #
-if host.startswith('milou'): refseq_special_db = "/gulo/glob/alexe/databases/refseq/"
-else:                        refseq_special_db = home + "LD12/databases/refseq"
+if host.startswith('m'): refseq_special_db = "/gulo/glob/alexe/databases/refseq/refseq_SAR11"
+else:                    refseq_special_db = home + "LD12/databases/refseq/refseq_SAR11"
 
 ###############################################################################
-class AgainstNR(object):
-    """This sub-object takes care of BLASTing the genes against the NR database
+class Duplications(object):
+    """This sub-object takes care of BLASTing the genes against the refseq database
     and parsing the results form that. We want to blast only the fresh water
     clusters against a modified refseq database."""
 
@@ -43,6 +43,7 @@ class AgainstNR(object):
         self.clusters    = analysis.fresh_clusters
         self.seq_type    = analysis.seq_type
         self.num_threads = analysis.num_threads
+        self.timer       = analysis.timer
         # Other #
         self.e_value      = e_value
         self.min_identity = min_identity
@@ -54,7 +55,7 @@ class AgainstNR(object):
     @property_cached
     def fresh_fasta(self):
         """A file containing all the fresh water genes"""
-        fasta = FASTA(self.p.all_fasta, self.seq_type)
+        fasta = FASTA(self.p.fresh_fasta)
         if not fasta.exists:
             print "Building fasta file with all fresh genes..."
             fresh = [g for g in genomes.values() if g.fresh]
@@ -88,7 +89,7 @@ class AgainstNR(object):
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
-            print "Using: %i genes" % split_thousands(len(self.fresh_fasta))
+            print "Using: %s genes" % split_thousands(len(self.fresh_fasta))
             print "Similarity search against NR for all fresh genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()
