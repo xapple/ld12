@@ -33,6 +33,18 @@ class Comparison(object):
         # Save attributes #
         self.analysis = analysis
 
+    def collapse_families(self, tree, fams):
+        """Utility function: Collapse families into one leaf"""
+        for f in fams:
+            nodes = tree.search_nodes(family=f.name)
+            if len(nodes) == 1: ancestor = nodes[0]
+            else:               ancestor = tree.get_common_ancestor(nodes)
+            for leaf in ancestor: assert leaf.family == f.name
+            for node in ancestor.iter_descendants(): node.delete(prevent_nondicotomic=False)
+            ancestor.name = f.name
+            ancestor.family = f.name
+
+    #-------------------------------------------------------------------------#
     @property_cached
     def collapsing(self):
         """Clusters that have strict coherence within all the seven families
@@ -94,17 +106,40 @@ class Comparison(object):
         self.uncollapsible_stats.to_csv(str(self.analysis.p.uncollapsible), sep='\t', encoding='utf-8')
 
     #-------------------------------------------------------------------------#
-    def collapse_families(self, tree, fams):
-        """Utility function: Collapse families into one leaf"""
-        for f in fams:
-            nodes = tree.search_nodes(family=f.name)
-            if len(nodes) == 1: ancestor = nodes[0]
-            else:               ancestor = tree.get_common_ancestor(nodes)
-            for leaf in ancestor: assert leaf.family == f.name
-            for node in ancestor.iter_descendants(): node.delete(prevent_nondicotomic=False)
-            ancestor.name = f.name
-            ancestor.family = f.name
+    @property_cached
+    def split_three_a_b(self):
+        """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
+        just for that split."""
+        # Let's maintain two lists #
+        split_conserved = []
+        split_broken = []
+        # Families #
+        fams = [f for name,f in families.items() if name == 'IIIa' or name == 'IIIb']
+        # Trees that are monophyletic for IIIa and IIIb #
+        good_clusters = ((self.uncollapsible_stats['IIIa'] == 'mono') | (self.uncollapsible_stats['IIIa'] == 'single')) & \
+                        ((self.uncollapsible_stats['IIIb'] == 'mono') | (self.uncollapsible_stats['IIIb'] == 'single'))
+        good_clusters = [c for c in self.uncollapsible if good_clusters[c.name]]
+        # These clusters also match the query #
+        good_clusters += self.collapsible
+        # Let's check if IIIa and IIIb are linked by a node #
+        for cluster in good_clusters:
+            tree = cluster.tree_ete
+            self.collapse_families(tree, fams)
+            a = tree.search_nodes(family='IIIa')
+            b = tree.search_nodes(family='IIIb')
+            assert len(a) == 1
+            assert len(b) == 1
+            if a[0].up is b[0].up: split_conserved += [cluster]
+            else:                  split_broken    += [cluster]
+        # Results #
+        return split_conserved, split_broken
 
+    def save_split_stats(self):
+        """Save the dataframe above in a CSV file"""
+        content = 'Conserved: %i\nBroken: %i' % (len(self.split_three_a_b[0]), len(self.split_three_a_b[1]))
+        self.analysis.p.split.write(content)
+
+    #-------------------------------------------------------------------------#
     @property_cached
     def matches(self):
         """Taking only clusters that are collapsible, we can ask: do they
@@ -152,37 +187,3 @@ class Comparison(object):
     def save_mismatching_stats(self):
         """Save the dataframe above in a CSV file"""
         self.analysis.p.mismatching.writelines(self.mismatching_stats)
-
-    #-------------------------------------------------------------------------#
-    @property_cached
-    def split_three_a_b(self):
-        """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
-        just for that split."""
-        # Let's maintain two lists #
-        split_conserved = []
-        split_broken = []
-        # Families #
-        fams = [f for name,f in families.items() if name == 'IIIa' or name == 'IIIb']
-        # Trees that are monophyletic for IIIa and IIIb #
-        good_clusters = ((self.uncollapsible_stats['IIIa'] == 'mono') | (self.uncollapsible_stats['IIIa'] == 'single')) & \
-                        ((self.uncollapsible_stats['IIIb'] == 'mono') | (self.uncollapsible_stats['IIIb'] == 'single'))
-        good_clusters = [c for c in self.uncollapsible if good_clusters[c.name]]
-        # These clusters also match the query #
-        good_clusters += self.collapsible
-        # Let's check if IIIa and IIIb are linked by a node #
-        for cluster in good_clusters:
-            tree = cluster.tree_ete
-            self.collapse_families(tree, fams)
-            a = tree.search_nodes(family='IIIa')
-            b = tree.search_nodes(family='IIIb')
-            assert len(a) == 1
-            assert len(b) == 1
-            if a[0].up is b[0].up: split_conserved += [cluster]
-            else:                  split_broken    += [cluster]
-        # Results #
-        return split_conserved, split_broken
-
-    def save_split_stats(self):
-        """Save the dataframe above in a CSV file"""
-        content = 'Conserved: %i\nBroken: %i' % (len(self.split_three_a_b[0]), len(self.split_three_a_b[1]))
-        self.analysis.p.split.write(content)
