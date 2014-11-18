@@ -1,6 +1,6 @@
 # Built-in modules #
 import string
-from collections import default_dict
+from collections import defaultdict
 
 # Internal modules #
 from ld12 import families
@@ -93,7 +93,7 @@ class Comparison(object):
                 tree_string = mirror_string(tree_string)
                 tree_string = tree_string.translate(string.maketrans("/\\", "\\/"))
                 mismatching_stats += concatenate_by_line(ref_string, mirror_string(tree_string))
-                mismatching_stats += "Robinson–Foulds metric: %f\n" % rf
+                mismatching_stats += "Robinson-Foulds metric: %f\n" % rf
                 mismatching_stats += "Max RF: %f\n" % max_rf
         # Return values #
         return matching, mismatching, mismatching_stats
@@ -120,7 +120,7 @@ class Comparison(object):
                     tree = c.tree_ete
                     nodes = tree.search_nodes(family=f.name)
                     ancestor = tree.get_common_ancestor(nodes)
-                    intruders = default_dict(int)
+                    intruders = defaultdict(int)
                     for leaf in ancestor: intruders[leaf.family] += 1
                     intruders.pop(f.name)
                     result[f.name] = dict(intruders)
