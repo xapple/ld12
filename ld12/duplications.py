@@ -67,7 +67,7 @@ class Duplications(object):
     @property_cached
     def blast_db(self):
         """A blastable database of all refseq + all marine organism genes"""
-        return BLASTdb(refseq_special_db, self.seq_type)
+        return BLASTdb(refseq_special_db, 'nucl')
 
     @property_cached
     def search(self):
