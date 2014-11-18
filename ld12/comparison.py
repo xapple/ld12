@@ -91,7 +91,7 @@ class Comparison(object):
                 tree_string = pad_with_whitespace(tree_string)
                 tree_string = mirror_lines(tree_string)
                 tree_string = tree_string.translate(string.maketrans("/\\", "\\/"))
-                mismatching_stats += concatenate_by_line(ref_string, tree_string) + '\n'
+                mismatching_stats += concatenate_by_line(ref_string, tree_string) + '\n\n'
                 mismatching_stats += "Robinson-Foulds metric: %i\n" % rf
                 mismatching_stats += "Max RF: %i\n" % max_rf
                 mismatching_stats += "-----------------------------------------------\n"
@@ -126,6 +126,7 @@ class Comparison(object):
                     intruders.pop(f.name)
                     result[c.name][f.name] = dict(intruders)
         result = pandas.DataFrame(result)
+        result = result.transpose()
         return result
 
     #-------------------------------------------------------------------------#
