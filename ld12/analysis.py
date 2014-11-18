@@ -42,7 +42,7 @@ class Analysis(object):
     /user_outputs/ribo_table.tsv
     /user_outputs/family_table.tsv
     /user_outputs/uncollapsible_stats.tsv
-    /user_outputs/mismatching_stats.tsv
+    /user_outputs/mismatching_stats.txt
     /clusters/
     """
 

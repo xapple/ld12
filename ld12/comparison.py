@@ -39,7 +39,7 @@ class Comparison(object):
         collapsible = []
         uncollapsible = []
         # Check every one of the good clusters #
-        print "Computing which clusters are collasping..."
+        print "Computing which clusters are collapsing..."
         for c in tqdm(self.analysis.best_clusters):
             for f in families.values():
                 if len([g for g in c if g.genome.family == f]) == 1: continue
@@ -91,9 +91,10 @@ class Comparison(object):
                 tree_string = pad_with_whitespace(tree_string)
                 tree_string = mirror_lines(tree_string)
                 tree_string = tree_string.translate(string.maketrans("/\\", "\\/"))
-                mismatching_stats += concatenate_by_line(ref_string, tree_string)
-                mismatching_stats += "Robinson-Foulds metric: %f\n" % rf
-                mismatching_stats += "Max RF: %f\n" % max_rf
+                mismatching_stats += concatenate_by_line(ref_string, tree_string) + '\n'
+                mismatching_stats += "Robinson-Foulds metric: %i\n" % rf
+                mismatching_stats += "Max RF: %i\n" % max_rf
+                mismatching_stats += "-----------------------------------------------\n"
         # Return values #
         return matching, mismatching, mismatching_stats
 
@@ -105,6 +106,7 @@ class Comparison(object):
     def mismatching_stats(self): return self.matches[2]
 
     #-------------------------------------------------------------------------#
+    @property
     def uncollapsible_stats(self):
         """For the trees that are uncollapsible, where do they not correspond?"""
         result = {}
@@ -112,9 +114,9 @@ class Comparison(object):
             result[c.name] = {}
             for f in families.values():
                 if len([g for g in c if g.genome.family == f]) == 1:
-                    result[f.name] = 'single'
+                    result[c.name][f.name] = 'single'
                 elif c.tree_ete.check_monophyly(values=[f.name], target_attr="family")[0]:
-                    result[f.name] = 'mono'
+                    result[c.name][f.name] = 'mono'
                 else:
                     tree = c.tree_ete
                     nodes = tree.search_nodes(family=f.name)
@@ -122,7 +124,7 @@ class Comparison(object):
                     intruders = defaultdict(int)
                     for leaf in ancestor: intruders[leaf.family] += 1
                     intruders.pop(f.name)
-                    result[f.name] = dict(intruders)
+                    result[c.name][f.name] = dict(intruders)
         result = pandas.DataFrame(result)
         return result
 
