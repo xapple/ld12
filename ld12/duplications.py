@@ -49,7 +49,7 @@ class Duplications(object):
         self.min_identity = min_identity
         self.min_coverage = min_coverage
         # Paths #
-        self.base_dir = analysis.p.againstnr_dir
+        self.base_dir = analysis.p.duplications_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
 
     @property_cached

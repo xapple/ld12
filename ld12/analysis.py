@@ -31,7 +31,7 @@ class Analysis(object):
 
     all_paths = """
     /clusters/
-    /againstnr/
+    /duplications/
     /blast/all_genes.fasta
     /blast/all_genes.fasta.nin
     /blast/all_genes.fasta.pin
