@@ -1,15 +1,19 @@
 # Built-in modules #
+import socket, os
 
 # Internal modules #
-import socket, os
+from ld12 import genomes
 
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
 from plumbing.cache import property_cached
 from plumbing.autopaths import AutoPaths
+from plumbing.common import split_thousands
+from fasta import FASTA
 
 # Third party modules #
+from shell_command import shell_output
 
 # Constants #
 home = os.environ['HOME'] + '/'
@@ -35,9 +39,10 @@ class AgainstNR(object):
                  min_identity = 0.3,
                  min_coverage = 0.5):
         # Attributes #
-        self.analysis = analysis
-        self.clusters = analysis.fresh_clusters
-        self.seq_type = analysis.seq_type
+        self.analysis    = analysis
+        self.clusters    = analysis.fresh_clusters
+        self.seq_type    = analysis.seq_type
+        self.num_threads = analysis.num_threads
         # Other #
         self.e_value      = e_value
         self.min_identity = min_identity
@@ -49,7 +54,14 @@ class AgainstNR(object):
     @property_cached
     def fresh_fasta(self):
         """A file containing all the fresh water genes"""
-        return BLASTdb(refseq_special_db, self.seq_type)
+        fasta = FASTA(self.p.all_fasta, self.seq_type)
+        if not fasta.exists:
+            print "Building fasta file with all fresh genes..."
+            fresh = [g for g in genomes.values() if g.fresh]
+            shell_output('gunzip -c %s > %s' % (' '.join(fresh), fasta))
+            assert len(fasta) == sum(map(len, fresh))
+            self.timer.print_elapsed()
+        return fasta
 
     @property_cached
     def blast_db(self):
@@ -76,15 +88,14 @@ class AgainstNR(object):
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
-            print "Using: %i genes" % split_thousands(len(self.blast_db))
-            print "--> STEP 2: Similarity search against all genes with %i processes" % self.num_threads
+            print "Using: %i genes" % split_thousands(len(self.fresh_fasta))
+            print "Similarity search against NR for all fresh genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()
-            print "--> STEP 3: Filter out bad hits from the search results"
+            print "Filter out bad hits from the search results"
             self.search.filter()
             if self.search.out_path.count_bytes == 0:
                 raise Exception("Found exactly zero hits after the similarity search.")
-            print "Filtered %s of the hits" % self.percent_filtered
             self.timer.print_elapsed()
         # Parse the results #
         return self.search.results
