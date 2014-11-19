@@ -90,7 +90,7 @@ class Duplications(object):
         # Check that the search was run #
         if not self.search.out_path.exists:
             print "Using: %s genes" % split_thousands(len(self.fresh_fasta))
-            print "Similarity search against NR for all fresh genes with %i processes" % self.num_threads
+            print "Similarity search against custom database for all fresh genes with %i processes" % self.num_threads
             self.search.run()
             self.timer.print_elapsed()
             print "Filter out bad hits from the search results"

@@ -79,7 +79,7 @@ class Analysis(object):
         self.ribosomal = Ribosomal(self)
         # Add the comparison statistics stuff #
         self.comparison = Comparison(self)
-        # Add the blast against NR #
+        # Add the blast against refseq #
         self.duplications = Duplications(self)
 
     @property_cached
