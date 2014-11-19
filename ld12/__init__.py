@@ -4,7 +4,7 @@ b'This module needs Python 2.7.x'
 __version__ = '0.0.2'
 
 # Built-in modules #
-import sys, os, glob
+import sys, os, glob, warnings
 
 # Internal modules #
 from ld12.genome import Genome
@@ -12,6 +12,11 @@ from ld12.family import Family
 
 # Third party modules #
 import pandas
+
+# Supress warning messages #
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import ete2
 
 ###############################################################################
 # Find the data dir #

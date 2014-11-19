@@ -52,7 +52,7 @@ class Analysis(object):
         (self.__class__.__name__, len(self.genomes))
 
     def __init__(self,
-                 out_dir      = './output/',
+                 out_dir      = './ld12_output/',
                  e_value      = 0.001,
                  min_identity = 0.3,
                  min_coverage = 0.5,
@@ -60,7 +60,7 @@ class Analysis(object):
                  mcl_factor   = 1.5,
                  num_threads  = None):
         # Paths #
-        self.base_dir = out_dir
+        self.base_dir = os.path.expanduser(out_dir)
         if not self.base_dir.endswith('/'): self.base_dir += '/'
         if not os.path.exists(self.base_dir): os.makedirs(self.base_dir)
         self.p = AutoPaths(self.base_dir, self.all_paths)
@@ -79,7 +79,7 @@ class Analysis(object):
         self.ribosomal = Ribosomal(self)
         # Add the comparison statistics stuff #
         self.comparison = Comparison(self)
-        # Add the blast against refseq #
+        # Add the blast against refseq for detecting duplications #
         self.duplications = Duplications(self)
 
     @property_cached

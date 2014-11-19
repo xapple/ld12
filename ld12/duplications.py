@@ -2,11 +2,12 @@
 import socket, os
 
 # Internal modules #
-from ld12 import genomes
+from ld12 import genomes, genes
 
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
+from seqsearch.common import UtilsNCBI
 from plumbing.cache import property_cached
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
@@ -71,21 +72,22 @@ class Duplications(object):
 
     @property_cached
     def search(self):
-        """The sequence similarity search to be run"""
+        """The sequence similarity search to be run (tblastn)"""
         return ParallelSeqSearch(
               algorithm   = "blast",
               input_fasta = self.fresh_fasta,
               seq_type    = self.seq_type,
               database    = self.blast_db,
               num_threads = self.num_threads,
-              filtering   = {'e_value':      self.e_value,
+              filtering   = {'max_targets':  1,
+                             'e_value':      self.e_value,
                              'min_identity': self.min_identity,
                              'min_coverage': self.min_coverage},
               params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
 
     @property
     def search_results(self):
-        """For every gene, search against a database of all gene, return the best hits
+        """For every gene, search against a database of all gene, return the best hit
         after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
@@ -100,3 +102,25 @@ class Duplications(object):
             self.timer.print_elapsed()
         # Parse the results #
         return self.search.results
+
+    def assign_best_hits(self):
+        """Parse the results and add the best hit information for each Gene
+        object in each freshwater Genome object"""
+        last_query_id = -1
+        for query_id, hit_id, bitscore, identity, coverage in self.search_results:
+            if query_id != last_query_id:
+                gene = genes[query_id]
+                gene.best_hit = hit_id
+                print gene.__repr__()
+                print gene.best_hit
+                last_query_id = query_id
+                continue
+
+    def assign_taxonomy(self):
+        """Use the best hit information for each Gene object to add the assign_taxonomy
+        information of each best hit to each Gene object"""
+        ncbi = UtilsNCBI()
+        for gene in [g for g in genes.values() if g.genome.fresh]:
+            if not hasattr(gene, 'best_hit'): print "Gene %s did not get a best hit against Refseq" % gene.name
+            gi_num = gene.best_hit
+            gene.taxonomy = ncbi.gi_num_to_tax(gi_num)
