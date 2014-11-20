@@ -15,6 +15,7 @@ from fasta import FASTA
 
 # Third party modules #
 from shell_command import shell_output
+from tqdm import tqdm
 
 # Constants #
 home = os.environ['HOME'] + '/'
@@ -111,16 +112,34 @@ class Duplications(object):
             if query_id != last_query_id:
                 gene = genes[query_id]
                 gene.best_hit = hit_id
-                print gene.__repr__()
-                print gene.best_hit
                 last_query_id = query_id
                 continue
 
     def assign_taxonomy(self):
         """Use the best hit information for each Gene object to add the assign_taxonomy
         information of each best hit to each Gene object"""
+        # Check all genes have a hit #
+        self.fresh_genes      = [g for g in genes.values() if g.genome.fresh]
+        self.hit_genes        = [g for g in self.fresh_genes if hasattr(g, 'best_hit')]
+        self.no_hit_genes     = [g for g in self.fresh_genes if not hasattr(g, 'best_hit')]
+        self.ncbi_hit_genes   = [g for g in self.hit_genes if g.best_hit.startswith('gi')]
+        self.marine_hit_genes = [g for g in self.hit_genes if g.best_hit.startswith('Pelub58DRAFT')]
+        # Check there are no others #
+        assert sum(map(len, (self.marine_hit_genes, self.ncbi_hit_genes, self.no_hit_genes))) == len(self.fresh_genes)
+        # Print those that don't #
+        for gene in self.no_hit_genes: print "Gene %s did not get a best hit against Refseq+Marine" % gene.name
+        # Assign taxonomy #
+        for gene in self.marine_hit_genes: gene.taxonomy = "Pelub58"
+        # Download in batch #
+        for gene in self.ncbi_hit_genes: gene.gi_num = gene.best_hit.split('|')[1]
         ncbi = UtilsNCBI()
-        for gene in [g for g in genes.values() if g.genome.fresh]:
-            if not hasattr(gene, 'best_hit'): print "Gene %s did not get a best hit against Refseq" % gene.name
-            gi_num = gene.best_hit
-            gene.taxonomy = ncbi.gi_num_to_tax(gi_num)
+        taxonomies = ncbi.gi_num_to_tax([g.gi_num for g in self.ncbi_hit_genes])
+        for gene in self.ncbi_hit_genes: gene.taxonomy = taxonomies[gene.gi_num]
+
+    def save_taxonomy_info(self):
+        """Save the results"""
+        pass
+
+    def make_plot(self):
+        """Plot the hit information"""
+        pass

@@ -161,7 +161,6 @@ class Analysis(object):
         We also kick out clusters with sequences presenting only gaps."""
         return [c for c in self.clusters if len(c.families) == len(families)
                                         and len(c.genes)     < 30
-                                        and c.p.bestTree.exists
                                         and not c.gaps_in_alignment]
 
     @property_cached
@@ -178,7 +177,7 @@ class Analysis(object):
         for i, c in enumerate(self.best_clusters):
             print "* Building tree for cluster '%s'..." % c.name
             print "* Cluster %i out of %i with %i genes (%i filtered) and a score of %i" % \
-                  (i+1, len(self.best_clusters)+1, len(c.genes), len(c.filtered_genes), c.score)
+                  (i+1, len(self.best_clusters), len(c.genes), len(c.filtered_genes), c.score)
             print c.tree
             self.timer.print_elapsed()
 
