@@ -2,20 +2,19 @@
 import socket, os
 
 # Internal modules #
-from ld12 import genomes, genes
+from ld12 import genomes, genes, families
 
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
 from seqsearch.common import UtilsNCBI
-from plumbing.cache import property_cached
+from plumbing.cache import property_cached, property_pickled
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
 from fasta import FASTA
 
 # Third party modules #
 from shell_command import shell_output
-from tqdm import tqdm
 
 # Constants #
 home = os.environ['HOME'] + '/'
@@ -107,6 +106,7 @@ class Duplications(object):
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
         object in each freshwater Genome object"""
+        # Only one best it per gene #
         last_query_id = -1
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
             if query_id != last_query_id:
@@ -114,11 +114,7 @@ class Duplications(object):
                 gene.best_hit = hit_id
                 last_query_id = query_id
                 continue
-
-    def assign_taxonomy(self):
-        """Use the best hit information for each Gene object to add the assign_taxonomy
-        information of each best hit to each Gene object"""
-        # Check all genes have a hit #
+        # Make groups #
         self.fresh_genes      = [g for g in genes.values() if g.genome.fresh]
         self.hit_genes        = [g for g in self.fresh_genes if hasattr(g, 'best_hit')]
         self.no_hit_genes     = [g for g in self.fresh_genes if not hasattr(g, 'best_hit')]
@@ -126,20 +122,42 @@ class Duplications(object):
         self.marine_hit_genes = [g for g in self.hit_genes if g.best_hit.startswith('Pelub58DRAFT')]
         # Check there are no others #
         assert sum(map(len, (self.marine_hit_genes, self.ncbi_hit_genes, self.no_hit_genes))) == len(self.fresh_genes)
-        # Print those that don't #
-        for gene in self.no_hit_genes: print "Gene %s did not get a best hit against Refseq+Marine" % gene.name
-        # Assign taxonomy #
-        for gene in self.marine_hit_genes: gene.taxonomy = "Pelub58"
-        # Download in batch #
+        # Extract numbers #
         for gene in self.ncbi_hit_genes: gene.gi_num = gene.best_hit.split('|')[1]
-        ncbi = UtilsNCBI()
-        taxonomies = ncbi.gi_num_to_tax([g.gi_num for g in self.ncbi_hit_genes])
-        for gene in self.ncbi_hit_genes: gene.taxonomy = taxonomies[gene.gi_num]
+        # All possible GI numbers #
+        self.all_gi_nums = [g.gi_num for g in self.ncbi_hit_genes]
 
-    def save_taxonomy_info(self):
+    @property_pickled
+    def gi_to_record(self):
+        """Link all possible GIs we found to their record and save the result"""
+        # Download in batch #
+        ncbi = UtilsNCBI()
+        return ncbi.gis_to_records([g.gi_num for g in self.ncbi_hit_genes])
+
+    def assign_taxonomy(self):
+        """Use the best hit information for each Gene object to add the taxonomy
+        information of each best hit to each Gene object"""
+        ncbi = UtilsNCBI()
+        for g in self.no_hit_genes:     g.taxonomy = None
+        for g in self.marine_hit_genes: g.taxonomy = genes[g.best_hit].genome.family.name
+        for g in self.ncbi_hit_genes:   g.taxonomy = ncbi.record_to_taxonomy(self.gi_to_record[g.gi_num])
+
+    @property
+    def duplications_stats(self):
+        return """
+        Total fresh water genes: %s
+        Did not get a top hit: %s
+        Did get a top hit against one of the marine genes: %s
+        Did get a top hit against one of the other NCBI genes: %s
+        """ % (len(self.fresh_genes), len(self.no_hit_genes), len(self.marine_hit_genes), len(self.ncbi_hit_genes))
+
+    def save_duplications_stats(self):
         """Save the results"""
-        pass
+        self.analysis.p.duplications.writelines(self.duplications_stats)
 
     def make_plot(self):
         """Plot the hit information"""
-        pass
+        no_hits = 0
+        categories = {'Bacteria':0, 'Proteobacteria':0, 'Alphaproteobacteria':0, 'Rickettsiales':0}
+        families = {f.name:0 for f in families}
+

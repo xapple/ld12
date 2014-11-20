@@ -46,6 +46,7 @@ class Analysis(object):
     /user_outputs/uncollapsible_stats.tsv
     /user_outputs/mismatching_stats.txt
     /user_outputs/split_stats.txt
+    /user_outputs/duplications_stats.txt
     """
 
     def __repr__(self): return '<%s object with %i genomes>' % \
@@ -206,3 +207,4 @@ class Analysis(object):
         before = sum([q.out_path.count for q in self.search.blast_queries])
         after = self.search.out_path.count
         return "%.1f%%" % (100 - (after/before)*100)
+
