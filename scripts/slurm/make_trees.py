@@ -30,7 +30,13 @@ print "SLURM: start at {0} on {1}".format(now, platform.node())
 
 # Do it #
 a = Analysis(out_dir=out_dir)
+assert all([c.p.bestTree.exists for c in a.best_clusters])
 a.make_trees()
+
+# Stats #
+a.comparison.save_uncollapsible_stats()
+a.comparison.save_split_stats()
+a.comparison.save_mismatching_stats()
 
 # End #
 now = datetime.datetime.now(dateutil.tz.tzlocal())

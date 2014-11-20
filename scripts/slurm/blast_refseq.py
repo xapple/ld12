@@ -30,7 +30,8 @@ print "SLURM: start at {0} on {1}".format(now, platform.node())
 
 # Do it #
 a = Analysis(out_dir=out_dir)
-print a.duplications.search_results
+a.duplications.assign_best_hits()
+a.duplications.assign_taxonomy()
 
 # End #
 now = datetime.datetime.now(dateutil.tz.tzlocal())

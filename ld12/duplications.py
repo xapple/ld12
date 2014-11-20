@@ -8,7 +8,7 @@ from ld12 import genomes, genes, families
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.blast import BLASTdb
 from seqsearch.common import UtilsNCBI
-from plumbing.cache import property_cached, property_pickled
+from plumbing.cache import property_cached, pickled_property
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
 from fasta import FASTA
@@ -33,6 +33,7 @@ class Duplications(object):
     all_paths = """
     /blast/fresh_genes.fasta
     /blast/fresh_genes.blastout
+    /ncbi/gi_to_record.pickle
     """
 
     def __init__(self, analysis,
@@ -106,7 +107,7 @@ class Duplications(object):
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
         object in each freshwater Genome object"""
-        # Only one best it per gene #
+        # Only one best hit per gene #
         last_query_id = -1
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
             if query_id != last_query_id:
@@ -124,10 +125,12 @@ class Duplications(object):
         assert sum(map(len, (self.marine_hit_genes, self.ncbi_hit_genes, self.no_hit_genes))) == len(self.fresh_genes)
         # Extract numbers #
         for gene in self.ncbi_hit_genes: gene.gi_num = gene.best_hit.split('|')[1]
+        # Extract gene objects #
+        for gene in self.marine_hit_genes: gene.marine_hit = genes[gene.best_hit.split('[')[0]]
         # All possible GI numbers #
         self.all_gi_nums = [g.gi_num for g in self.ncbi_hit_genes]
 
-    @property_pickled
+    @pickled_property
     def gi_to_record(self):
         """Link all possible GIs we found to their record and save the result"""
         # Download in batch #
@@ -139,7 +142,7 @@ class Duplications(object):
         information of each best hit to each Gene object"""
         ncbi = UtilsNCBI()
         for g in self.no_hit_genes:     g.taxonomy = None
-        for g in self.marine_hit_genes: g.taxonomy = genes[g.best_hit].genome.family.name
+        for g in self.marine_hit_genes: g.taxonomy = g.marine_hit.genome.family.name
         for g in self.ncbi_hit_genes:   g.taxonomy = ncbi.record_to_taxonomy(self.gi_to_record[g.gi_num])
 
     @property
