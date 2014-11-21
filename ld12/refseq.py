@@ -34,7 +34,7 @@ class RefSeqProkPlusMarine(object):
             # We are going to cat a whole of files together #
             refseq_bact  = list(refseq_bact_prot_nr.raw_files)
             refseq_arch  = list(refseq_arch_prot_nr.raw_files)
-            marine_genomes = [g for g in genomes if g.marine]
+            marine_genomes = [g for g in genomes.values() if g.marine]
             all_genes = refseq_bact + refseq_arch + marine_genomes
             shell_output("zcat %s > %s" % (' '.join(all_genes), self.p.fasta))
         if not self.p.nin.exists:
