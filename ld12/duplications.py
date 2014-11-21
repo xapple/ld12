@@ -1,26 +1,34 @@
 # Built-in modules #
 import socket, os
+from collections import OrderedDict
 
 # Internal modules #
 from ld12 import genomes, genes, families
+from ld12.refseq import RefSeqProkPlusMarine
 
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
-from seqsearch.blast import BLASTdb
 from seqsearch.common import UtilsNCBI
 from plumbing.cache import property_cached, pickled_property
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
+from plumbing.graphs import Graph
 from fasta import FASTA
 
 # Third party modules #
+import pandas
 from shell_command import shell_output
+
+# Plot #
+import matplotlib
+matplotlib.use('Agg', warn=False)
+from matplotlib import pyplot
 
 # Constants #
 home = os.environ['HOME'] + '/'
 host = socket.gethostname()
 
-# Hardcoded database location #
+# Hard-coded database location #
 if host.startswith('m'): refseq_special_db = "/gulo/glob/alexe/databases/refseq/refseq_SAR11"
 else:                    refseq_special_db = home + "LD12/databases/refseq/refseq_SAR11"
 
@@ -34,6 +42,8 @@ class Duplications(object):
     /blast/fresh_genes.fasta
     /blast/fresh_genes.blastout
     /ncbi/gi_to_record.pickle
+    /refseq/
+    /graphs/
     """
 
     def __init__(self, analysis,
@@ -53,6 +63,10 @@ class Duplications(object):
         # Paths #
         self.base_dir = analysis.p.duplications_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
+        # The database #
+        self.refseq = RefSeqProkPlusMarine(self.p.refseq_dir)
+        # The final plot #
+        self.plot = TaxonomyPlot(self)
 
     @property_cached
     def fresh_fasta(self):
@@ -67,18 +81,13 @@ class Duplications(object):
         return fasta
 
     @property_cached
-    def blast_db(self):
-        """A blastable database of all refseq + all marine organism genes"""
-        return BLASTdb(refseq_special_db, 'nucl')
-
-    @property_cached
     def search(self):
-        """The sequence similarity search to be run (tblastn)"""
+        """The sequence similarity search to be run"""
         return ParallelSeqSearch(
               algorithm   = "blast",
               input_fasta = self.fresh_fasta,
               seq_type    = self.seq_type,
-              database    = self.blast_db,
+              database    = self.refseq.blast_db,
               num_threads = self.num_threads,
               filtering   = {'max_targets':  1,
                              'e_value':      self.e_value,
@@ -147,20 +156,68 @@ class Duplications(object):
 
     @property
     def duplications_stats(self):
-        return """
+        yield """
         Total fresh water genes: %s
         Did not get a top hit: %s
         Did get a top hit against one of the marine genes: %s
         Did get a top hit against one of the other NCBI genes: %s
-        """ % (len(self.fresh_genes), len(self.no_hit_genes), len(self.marine_hit_genes), len(self.ncbi_hit_genes))
+        \n\n""" % (len(self.fresh_genes),
+                   len(self.no_hit_genes),
+                   len(self.marine_hit_genes),
+                   len(self.ncbi_hit_genes))
+        yield "Gene name\tHit type\tHit reference\tHit taxonomy\n"
+        for g in self.no_hit_genes:     yield g.name + "\t" + "No hit" + '\t' + "None" + "\t" + "None" + '\n'
+        for g in self.marine_hit_genes: yield "\t".join((g.name, "Marine hit", g.marine_hit.name, g.taxonomy)) + '\n'
+        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "Marine hit", g.gi_num,          g.taxonomy)) + '\n'
+        yield '\n'
 
     def save_duplications_stats(self):
         """Save the results"""
         self.analysis.p.duplications.writelines(self.duplications_stats)
 
-    def make_plot(self):
-        """Plot the hit information"""
-        no_hits = 0
-        categories = {'Bacteria':0, 'Proteobacteria':0, 'Alphaproteobacteria':0, 'Rickettsiales':0}
-        families = {f.name:0 for f in families}
+###############################################################################
+class TaxonomyPlot(Graph):
+    short_name = 'fresh_taxonomy'
+    bottom = 0.35
+    left   = 0.1
 
+    def plot(self):
+        pass
+        # First the no hits #
+        no_hits = {"No hits": len(self.parent.no_hit_genes)}
+        # The marine hits #
+        fams = OrderedDict([(f,0) for f in families])
+        for g in self.parent.marine_hit_genes: fams[g.taxonomy] += 1
+        # Then the ncbi hits #
+        categories = OrderedDict((('Life',0),
+                                  ('Bacteria',0),
+                                  ('Proteobacteria',0),
+                                  ('Alphaproteobacteria',0),
+                                  ('SAR11 cluster',0),
+                                  ('Candidatus Pelagibacter',0)))
+        for g in self.parent.ncbi_hit_genes:
+            tax = g.taxonomy.split(';')
+            tax.append("")
+            tax.append("")
+            tax.append("")
+            if   tax[0].strip() != 'Bacteria':                 categories['Life']                     += 1
+            elif tax[1].strip() != 'Proteobacteria':           categories['Bacteria']                 += 1
+            elif tax[2].strip() != 'Alphaproteobacteria':      categories['Proteobacteria']           += 1
+            elif tax[3].strip() != 'SAR11 cluster':            categories['Alphaproteobacteria']      += 1
+            elif tax[4].strip() != 'Candidatus Pelagibacter':  categories['SAR11 cluster']            += 1
+            else:                                              categories['Candidatus Pelagibacter']  += 1
+        # Frame #
+        self.frame = OrderedDict()
+        self.frame.update(no_hits)
+        self.frame.update(categories)
+        self.frame.update(fams)
+        self.frame = pandas.Series(self.frame)
+        # Plot #
+        axes = self.frame.plot(kind='bar', color='gray')
+        fig = pyplot.gcf()
+        axes.set_title("Taxonomy distribution for the best hit against refseq for all freshwater genes")
+        axes.set_ylabel("Number of best hits with this taxonomy")
+        axes.xaxis.grid(True)
+        axes.set_yscale('symlog')
+        self.save_plot(fig, axes, sep=('y',))
+        pyplot.close(fig)
