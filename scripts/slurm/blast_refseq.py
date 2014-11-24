@@ -21,7 +21,7 @@ out_dir = home + "/LD12/results"
 
 # Message #
 now = datetime.datetime.now(dateutil.tz.tzlocal())
-now = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+now = now.strftime("%Y-%m-%d %Hh%Mm%Ss %Z%z")
 print "SLURM: start at {0} on {1}".format(now, platform.node())
 
 # Do it #
@@ -32,5 +32,5 @@ a.duplications.save_duplications_stats()
 
 # End #
 now = datetime.datetime.now(dateutil.tz.tzlocal())
-now = now.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+now = now.strftime("%Y-%m-%d %Hh%Mm%Ss %Z%z")
 print "SLURM: end at {0}".format(now)
