@@ -46,7 +46,9 @@ class RefSeqProkPlusMarine(object):
             self.timer.print_elapsed()
             # Check that all files ended with a newline #
             print "Checking that sequence counts match..."
-            assert len(blast_db) == map(len,self.refseq_bact) + map(len,self.refseq_arch) + map(len,self.marine_genomes)
+            assert len(blast_db) == sum(map(len,self.refseq_bact)) \
+                                  + sum(map(len,self.refseq_arch)) \
+                                  + sum(map(len,self.marine_genomes))
             self.timer.print_elapsed()
         if not self.p.pin.exists:
             # Call make DB #
