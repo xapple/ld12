@@ -20,6 +20,7 @@ class RefSeqProkPlusMarine(object):
     all_paths = """
     /all_genes.fasta
     /all_genes.fasta.nin
+    /log.txt
     """
 
     def __init__(self, base_dir):
@@ -39,8 +40,9 @@ class RefSeqProkPlusMarine(object):
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
             shell_output("zcat %s > %s" % (' '.join(self.all_genes), self.p.fasta))
+            # Check that all files ended with a newline #
+            assert len(blast_db) == map(len,self.refseq_bact) + map(len,self.refseq_arch) + map(len,self.marine_genomes)
         if not self.p.nin.exists:
             # Call make DB #
-            #blast_db.makeblastdb()
-            pass
+            blast_db.makeblastdb(logfile=self.p.log)
         return blast_db

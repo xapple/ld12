@@ -1,3 +1,3 @@
-# ld12 version 0.0.2
+# ld12 version 0.9.0
 
 Analysis for LD12 genomes

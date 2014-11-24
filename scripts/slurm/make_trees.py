@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #SBATCH -D /home/lucass/LD12/
 #SBATCH -J ld12_make_trees
-#SBATCH -o /home/lucass/LD12/ld12_make_trees.out
+#SBATCH -o /home/lucass/LD12/make_trees.out
 #SBATCH -A b2011138
 #SBATCH -t 7-00:00:00
 #SBATCH -N 1
@@ -12,16 +12,12 @@
 #SBATCH -d singleton
 
 # Modules #
-import dateutil, datetime, platform, socket, os
+import dateutil, datetime, platform, os
 from ld12.analysis import Analysis
 
 # Constants #
-host = socket.gethostname()
-home = os.environ['HOME'] + '/'
-
-# Output path #
-if host.startswith('milou'): out_dir = home + "/proj/b2013274/results"
-else:                        out_dir = home + "/LD12/results"
+home    = os.environ['HOME'] + '/'
+out_dir = home + "/LD12/results"
 
 # Message #
 now = datetime.datetime.now(dateutil.tz.tzlocal())
