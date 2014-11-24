@@ -23,8 +23,14 @@ class RefSeqProkPlusMarine(object):
     """
 
     def __init__(self, base_dir):
+        # Base attributes #
         self.base_dir = base_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
+        # Extra parameters #
+        self.refseq_bact    = list(refseq_bact_prot_nr.raw_files)
+        self.refseq_arch    = list(refseq_arch_prot_nr.raw_files)
+        self.marine_genomes = [g for g in genomes.values() if g.marine]
+        self.all_genes      = self.refseq_bact + self.refseq_arch + self.marine_genomes
 
     @property_cached
     def blast_db(self):
@@ -32,11 +38,7 @@ class RefSeqProkPlusMarine(object):
         blast_db = BLASTdb(self.p.genes, 'prot')
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
-            refseq_bact  = list(refseq_bact_prot_nr.raw_files)
-            refseq_arch  = list(refseq_arch_prot_nr.raw_files)
-            marine_genomes = [g for g in genomes.values() if g.marine]
-            all_genes = refseq_bact + refseq_arch + marine_genomes
-            shell_output("zcat %s > %s" % (' '.join(all_genes), self.p.fasta))
+            shell_output("zcat %s > %s" % (' '.join(self.all_genes), self.p.fasta))
         if not self.p.nin.exists:
             # Call make DB #
             #blast_db.makeblastdb()
