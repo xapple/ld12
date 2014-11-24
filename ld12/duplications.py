@@ -1,5 +1,5 @@
 # Built-in modules #
-import socket, os
+import os
 from collections import OrderedDict
 
 # Internal modules #
@@ -26,11 +26,6 @@ from matplotlib import pyplot
 
 # Constants #
 home = os.environ['HOME'] + '/'
-host = socket.gethostname()
-
-# Hard-coded database location #
-if host.startswith('m'): refseq_special_db = "/gulo/glob/alexe/databases/refseq/refseq_SAR11"
-else:                    refseq_special_db = home + "LD12/databases/refseq/refseq_SAR11"
 
 ###############################################################################
 class Duplications(object):
@@ -64,7 +59,7 @@ class Duplications(object):
         self.base_dir = analysis.p.duplications_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # The database #
-        self.refseq = RefSeqProkPlusMarine(self.p.refseq_dir)
+        self.refseq = RefSeqProkPlusMarine(self.p.refseq_dir, self)
         # The final plot #
         self.plot = TaxonomyPlot(self)
 

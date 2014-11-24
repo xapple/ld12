@@ -19,13 +19,15 @@ class RefSeqProkPlusMarine(object):
 
     all_paths = """
     /all_genes.fasta
-    /all_genes.fasta.nin
+    /all_genes.fasta.00.pin
     /log.txt
     """
 
-    def __init__(self, base_dir):
+    def __init__(self, base_dir, duplications):
         # Base attributes #
         self.base_dir = base_dir
+        self.duplications = duplications
+        self.timer = duplications.timer
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # Extra parameters #
         self.refseq_bact    = list(refseq_bact_prot_nr.raw_files)
@@ -39,10 +41,16 @@ class RefSeqProkPlusMarine(object):
         blast_db = BLASTdb(self.p.genes, 'prot')
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
+            print "Regrouping all fasta files together..."
             shell_output("zcat %s > %s" % (' '.join(self.all_genes), self.p.fasta))
+            self.timer.print_elapsed()
             # Check that all files ended with a newline #
+            print "Checking that sequence counts match..."
             assert len(blast_db) == map(len,self.refseq_bact) + map(len,self.refseq_arch) + map(len,self.marine_genomes)
-        if not self.p.nin.exists:
+            self.timer.print_elapsed()
+        if not self.p.pin.exists:
             # Call make DB #
+            print "Building a BLAST database..."
             blast_db.makeblastdb(logfile=self.p.log)
+            self.timer.print_elapsed()
         return blast_db
