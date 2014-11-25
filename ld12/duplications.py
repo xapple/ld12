@@ -36,8 +36,8 @@ class Duplications(object):
     all_paths = """
     /blast/fresh_genes.fasta
     /blast/fresh_genes.blastout
-    /ncbi/gi_to_record.pickle
-    /refseq/
+    /ncbi_taxonomy/gi_to_record.pickle
+    /database/
     /graphs/
     """
 
@@ -59,7 +59,7 @@ class Duplications(object):
         self.base_dir = analysis.p.duplications_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # The database #
-        self.refseq = RefSeqProkPlusMarine(self.p.refseq_dir, self)
+        self.refseq = RefSeqProkPlusMarine(self.p.database_dir, self)
         # The final plot #
         self.plot = TaxonomyPlot(self)
 
