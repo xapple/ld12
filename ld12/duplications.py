@@ -111,6 +111,7 @@ class Duplications(object):
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
         object in each freshwater Genome object"""
+        print "Parsing the best hits file..."
         # Only one best hit per gene #
         last_query_id = -1
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
@@ -133,6 +134,8 @@ class Duplications(object):
         for gene in self.marine_hit_genes: gene.marine_hit = genes[gene.best_hit]
         # All possible GI numbers #
         self.all_gi_nums = [g.gi_num for g in self.ncbi_hit_genes]
+        # Done #
+        self.timer.print_elapsed()
 
     @pickled_property
     def gi_to_record(self):
@@ -144,10 +147,12 @@ class Duplications(object):
     def assign_taxonomy(self):
         """Use the best hit information for each Gene object to add the taxonomy
         information of each best hit to each Gene object"""
+        print "Linking GI numbers to their NCBI taxonomy..."
         ncbi = UtilsNCBI()
         for g in self.no_hit_genes:     g.taxonomy = None
         for g in self.marine_hit_genes: g.taxonomy = g.marine_hit.genome.family.name
         for g in self.ncbi_hit_genes:   g.taxonomy = ncbi.record_to_taxonomy(self.gi_to_record[g.gi_num])
+        self.timer.print_elapsed()
 
     @property
     def duplications_stats(self):
