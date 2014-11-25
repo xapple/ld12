@@ -168,7 +168,7 @@ class Duplications(object):
         yield "Gene name\tHit type\tHit reference\tHit taxonomy\n"
         for g in self.no_hit_genes:     yield g.name + "\t" + "No hit" + '\t' + "None" + "\t" + "None" + '\n'
         for g in self.marine_hit_genes: yield "\t".join((g.name, "Marine hit", g.marine_hit.name, g.taxonomy)) + '\n'
-        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "Marine hit", g.gi_num,          g.taxonomy)) + '\n'
+        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "NCBI hit", g.gi_num,          g.taxonomy)) + '\n'
         yield '\n'
 
     def save_duplications_stats(self):
@@ -182,7 +182,6 @@ class TaxonomyPlot(Graph):
     left   = 0.1
 
     def plot(self):
-        pass
         # First the no hits #
         no_hits = {"No hits": len(self.parent.no_hit_genes)}
         # The marine hits #

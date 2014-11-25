@@ -29,6 +29,7 @@ a = Analysis(out_dir=out_dir)
 a.duplications.assign_best_hits()
 a.duplications.assign_taxonomy()
 a.duplications.save_duplications_stats()
+a.duplications.plot.plot()
 
 # End #
 now = datetime.datetime.now(dateutil.tz.tzlocal())
