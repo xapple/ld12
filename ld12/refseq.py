@@ -15,9 +15,12 @@ from shell_command import shell_output
 ###############################################################################
 class RefSeqProkPlusMarine(object):
     """A special database combining the refseq non redundant protein archives
-    for both bacteria and archaea, with, as an extra, all the marine genes added."""
+    for both bacteria and archaea, with, as an extra, all the marine genes added.
+    In addition, we will remove the freshwater genomes that appear to have been
+    already added to RefSeq."""
 
     all_paths = """
+    /modified_refseq_bact/
     /all_genes.fasta
     /all_genes.fasta.00.pin
     /log.txt
@@ -25,15 +28,35 @@ class RefSeqProkPlusMarine(object):
 
     def __init__(self, base_dir, duplications):
         # Base attributes #
-        self.base_dir = base_dir
         self.duplications = duplications
         self.timer = duplications.timer
+        # Directories #
+        self.base_dir = base_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # Extra parameters #
-        self.refseq_bact    = list(refseq_bact_prot_nr.raw_files)
         self.refseq_arch    = list(refseq_arch_prot_nr.raw_files)
         self.marine_genomes = [g for g in genomes.values() if g.marine]
         self.all_genes      = self.refseq_bact + self.refseq_arch + self.marine_genomes
+
+    @property
+    def refseq_bact(self):
+        """Copy the files from the original refseq bacteria. Edit them
+        to remove the things we don't want and return a list of the
+        new files"""
+        # Two lists of files #
+        orig_files     = list(refseq_bact_prot_nr.raw_files)
+        modified_files = [FASTA(self.p.modified_dir + f.filename) for f in orig_files]
+        # List of NCBI identifiers #
+        identifiers = [g.info['Genome Name / Sample Name'][22:] for g in genomes.values() if g.fresh]
+        # Filter function #
+        def only_non_scgc(reads):
+            for read in reads:
+                if any(i in read.description for i in identifiers): continue
+                else: yield read
+        # Main loop #
+        for orig, modif in zip(orig_files, modified_files): modif.write(only_non_scgc(orig))
+        # Return #
+        return modified_files
 
     @property_cached
     def blast_db(self):
@@ -42,7 +65,7 @@ class RefSeqProkPlusMarine(object):
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
             print "Regrouping all fasta files together..."
-            shell_output("zcat %s > %s" % (' '.join(self.all_genes), self.p.fasta))
+            shell_output("zcat %s > %s" % (' '.join(self.all_genes), self.p.genes))
             self.timer.print_elapsed()
             # Check that all files ended with a newline #
             print "Checking that sequence counts match..."
