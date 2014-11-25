@@ -124,13 +124,13 @@ class Duplications(object):
         self.hit_genes        = [g for g in self.fresh_genes if hasattr(g, 'best_hit')]
         self.no_hit_genes     = [g for g in self.fresh_genes if not hasattr(g, 'best_hit')]
         self.ncbi_hit_genes   = [g for g in self.hit_genes if g.best_hit.startswith('gi')]
-        self.marine_hit_genes = [g for g in self.hit_genes if g.best_hit.startswith('Pelub58DRAFT')]
+        self.marine_hit_genes = [g for g in self.hit_genes if not g.best_hit.startswith('gi')]
         # Check there are no others #
         assert sum(map(len, (self.marine_hit_genes, self.ncbi_hit_genes, self.no_hit_genes))) == len(self.fresh_genes)
         # Extract numbers #
         for gene in self.ncbi_hit_genes: gene.gi_num = gene.best_hit.split('|')[1]
         # Extract gene objects #
-        for gene in self.marine_hit_genes: gene.marine_hit = genes[gene.best_hit.split('[')[0]]
+        for gene in self.marine_hit_genes: gene.marine_hit = genes[gene.best_hit]
         # All possible GI numbers #
         self.all_gi_nums = [g.gi_num for g in self.ncbi_hit_genes]
 
