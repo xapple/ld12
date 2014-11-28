@@ -9,7 +9,7 @@ from ld12.refseq import RefSeqProkPlusMarine
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
 from seqsearch.common import UtilsNCBI
-from plumbing.cache import property_cached, pickled_property
+from plumbing.cache import property_cached, property_pickled
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
 from plumbing.graphs import Graph
@@ -84,7 +84,7 @@ class Duplications(object):
               seq_type    = self.seq_type,
               database    = self.refseq.blast_db,
               num_threads = self.num_threads,
-              filtering   = {'max_targets':  1,
+              filtering   = {'max_targets':  25,
                              'e_value':      self.e_value,
                              'min_identity': self.min_identity,
                              'min_coverage': self.min_coverage},
@@ -98,7 +98,7 @@ class Duplications(object):
         if not self.search.out_path.exists:
             print "Using: %s genes" % split_thousands(len(self.fresh_fasta))
             print "Similarity search against custom database for all fresh genes with %i processes" % self.num_threads
-            self.search.run()
+            self.search.run_local()
             self.timer.print_elapsed()
             print "Filter out bad hits from the search results"
             self.search.filter()
@@ -111,7 +111,8 @@ class Duplications(object):
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
         object in each freshwater Genome object"""
-        print "Parsing the best hits file..."
+        # Message #
+        if self.search_results: print "Parsing the best hits file..."
         # Only one best hit per gene #
         last_query_id = -1
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
@@ -137,7 +138,7 @@ class Duplications(object):
         # Done #
         self.timer.print_elapsed()
 
-    @pickled_property
+    @property_pickled
     def gi_to_record(self):
         """Link all possible GIs we found to their record and save the result"""
         # Download in batch #
@@ -168,7 +169,7 @@ class Duplications(object):
         yield "Gene name\tHit type\tHit reference\tHit taxonomy\n"
         for g in self.no_hit_genes:     yield g.name + "\t" + "No hit" + '\t' + "None" + "\t" + "None" + '\n'
         for g in self.marine_hit_genes: yield "\t".join((g.name, "Marine hit", g.marine_hit.name, g.taxonomy)) + '\n'
-        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "NCBI hit", g.gi_num,          g.taxonomy)) + '\n'
+        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "NCBI hit",   g.gi_num,          g.taxonomy)) + '\n'
         yield '\n'
 
     def save_duplications_stats(self):

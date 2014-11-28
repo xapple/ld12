@@ -3,7 +3,7 @@
 #SBATCH -J ld12_blastp_refseq
 #SBATCH -o /home/lucass/LD12/blastp_refseq.out
 #SBATCH -A b2011105
-#SBATCH -t 7-00:00:00
+#SBATCH -t 5-00:00:00
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH -p node

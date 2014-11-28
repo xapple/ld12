@@ -7,7 +7,7 @@ from ld12 import genomes
 from seqsearch.blast import BLASTdb
 from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
-from fasta.databases import refseq_bact_prot_nr, refseq_arch_prot_nr
+from seqseach.databases.refseq import refseq_bact_prot_nr, refseq_arch_prot_nr
 from fasta import FASTA
 
 # Third party modules #
@@ -25,6 +25,7 @@ class RefSeqProkPlusMarine(object):
     /all_genes.fasta
     /all_genes.fasta.00.pin
     /log.txt
+    /out.txt
     """
 
     def __init__(self, base_dir, duplications):
@@ -37,33 +38,35 @@ class RefSeqProkPlusMarine(object):
         # Extra parameters #
         self.refseq_bact_orig = list(refseq_bact_prot_nr.raw_files)
         self.refseq_arch_orig = list(refseq_arch_prot_nr.raw_files)
-        self.marine_genomes   = [g for g in genomes.values() if g.marine]
+        self.missing_marine   = [g for g in genomes.values() if g.marine and not g.in_refseq_bact]
 
     @property
     def refseq_bact_mod(self):
         """Copy the files from the original refseq bacteria database.
-        Edit them to remove the things the genes don't want included
+        Edit them to remove the things like the genes don't want included
         and return a list of the new files."""
-        # Message #
-        print "Filtering refseq database by removing SCGC genes..."
         # New list of files #
-        modified_files = [FASTA(self.p.modified_dir + f.filename) for f in self.refseq_bact_orig]
-        # List of NCBI identifiers #
-        identifiers = [g.info['Genome Name / Sample Name'][22:] for g in genomes.values() if g.fresh]
-        # Filter function #
-        scgc_genes_found = 0
-        def only_non_scgc(reads):
-            for read in reads:
-                if any(i in read.description for i in identifiers):
-                    scgc_genes_found =+ 1
-                    continue
-                else: yield read
-        # Main loop #
-        for orig, modif in zip(self.refseq_bact_orig, modified_files): modif.write(only_non_scgc(orig))
+        self.modified_files = [FASTA(self.p.modified_dir + f.filename) for f in self.refseq_bact_orig]
+        # Do they exist #
+        if any(not f.exists for f in self.modified_files):
+            # Message #
+            print "Filtering refseq database by removing SCGC genes..."
+            # List of NCBI identifiers #
+            identifiers = [g.info['taxon'] for g in genomes.values() if g.fresh]
+            # Filter function #
+            def only_non_scgc(reads):
+                scgc_genes_found = 0
+                for read in reads:
+                    if any(ident in read.description for ident in identifiers):
+                        scgc_genes_found =+ 1
+                        continue
+                    else: yield read
+                print "Excluded %i SCGC genes" % scgc_genes_found
+            # Main loop #
+            for orig, modif in zip(self.refseq_bact_orig, self.modified_files): modif.write(only_non_scgc(orig))
+            self.timer.print_elapsed()
         # Return #
-        print "Excluded %i SCGC genes" % scgc_genes_found
-        self.timer.print_elapsed()
-        return modified_files
+        return self.modified_files
 
     @property_cached
     def blast_db(self):
@@ -71,19 +74,19 @@ class RefSeqProkPlusMarine(object):
         blast_db = BLASTdb(self.p.genes, 'prot')
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
-            print "Regrouping all fasta files together..."
-            all_genes = self.refseq_bact_mod + self.refseq_arch_orig + self.marine_genomes
+            if self.refseq_bact_mod: print "Regrouping all fasta files together..."
+            all_genes = self.refseq_bact_mod + self.refseq_arch_orig + self.missing_marine
             shell_output("zcat %s > %s" % (' '.join(all_genes), self.p.genes))
             self.timer.print_elapsed()
             # Check that all files ended with a newline #
             print "Checking that sequence counts match..."
             assert len(blast_db) == sum(map(len,self.refseq_arch_orig)) \
                                   + sum(map(len,self.refseq_arch_orig)) \
-                                  + sum(map(len,self.marine_genomes))
+                                  + sum(map(len,self.missing_marine))
             self.timer.print_elapsed()
         if not self.p.pin.exists:
             # Call make DB #
             print "Building a BLAST database..."
-            blast_db.makeblastdb(logfile=self.p.log)
+            blast_db.makeblastdb(logfile=self.p.log, _out=self.p.out)
             self.timer.print_elapsed()
         return blast_db

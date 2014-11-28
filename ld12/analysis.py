@@ -117,7 +117,7 @@ class Analysis(object):
         if not self.search.out_path.exists:
             print "Using: %s genes" % split_thousands(len(self.blast_db))
             print "--> STEP 2: Similarity search against all genes with %i processes" % self.num_threads
-            self.search.run()
+            self.search.run_local()
             self.timer.print_elapsed()
             print "--> STEP 3: Filter out bad hits from the search results"
             self.search.filter()

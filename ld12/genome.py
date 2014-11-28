@@ -5,19 +5,33 @@ from ld12.gene import Gene
 
 # First party modules #
 from fasta import FASTA
-from plumbing.cache import property_cached
+from plumbing.cache import property_cached, property_pickled
+from plumbing.autopaths import AutoPaths
 
 # Third party modules #
+from Bio import Entrez
+Entrez.email = 'A.N.Other@example.com'
 
 ###############################################################################
 class Genome(FASTA):
     """A FASTA file somewhere on the file system representing a genome."""
 
-    def __init__(self, path):
+    all_paths = """
+    /in_refseq_bact.pickle
+    """
+
+    def __init__(self, path, base_dir=None):
+        # Attributes #
         self.path = path
         self.name = self.short_prefix
+        # Extras #
         self.info = None # Filled in by the __init__.py
         self.family = None # Filled in by the family.py
+        # Base directory #
+        if base_dir is None: self.base_dir = self.directory + self.short_prefix + '/'
+        else:                self.base_dir = base_dir
+        # Auto paths #
+        self.p = AutoPaths(self.base_dir, self.all_paths)
 
     @property
     def label(self):
@@ -47,3 +61,13 @@ class Genome(FASTA):
     def marine(self):
         """Is this organism a marine orgiansm?"""
         return not self.fresh
+
+    @property_pickled
+    def in_refseq_bact(self):
+        """Has this organism been included in the latest version of
+        the refseq bacterial database?"""
+        handle = Entrez.esearch(db="nucleotide", retmax=10, term=self.info['taxon'])
+        results = Entrez.read(handle)
+        handle.close()
+        count = int(results['Count'])
+        return count > 0
