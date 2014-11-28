@@ -7,3 +7,6 @@ What is the top hit non fresh-water. Is it from marine or from something else in
 
 * Analysis 2
 COnsidering the list of top hits that are all from fresh-water. Stopping as soon as a top hit is not freshwater. Is there another hit within the same genome other than, obviously, the query itself. Get the list of the gene IDs.
+
+---------------------------------------
+- With the trees when considering how many conserve the split 3a 3b, only consider those that have bootstrap over 80%.
