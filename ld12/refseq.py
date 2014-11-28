@@ -7,7 +7,7 @@ from ld12 import genomes
 from seqsearch.blast import BLASTdb
 from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
-from seqseach.databases.refseq import refseq_bact_prot_nr, refseq_arch_prot_nr
+from seqsearch.databases.refseq import refseq_bact_prot_nr, refseq_arch_prot_nr
 from fasta import FASTA
 
 # Third party modules #
@@ -61,7 +61,7 @@ class RefSeqProkPlusMarine(object):
                         scgc_genes_found =+ 1
                         continue
                     else: yield read
-                print "Excluded %i SCGC genes" % scgc_genes_found
+                print "* Excluded %i fresh water genes" % scgc_genes_found
             # Main loop #
             for orig, modif in zip(self.refseq_bact_orig, self.modified_files): modif.write(only_non_scgc(orig))
             self.timer.print_elapsed()
