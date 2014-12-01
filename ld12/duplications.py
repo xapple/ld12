@@ -79,16 +79,20 @@ class Duplications(object):
     def search(self):
         """The sequence similarity search to be run"""
         return ParallelSeqSearch(
-              algorithm   = "blast",
-              input_fasta = self.fresh_fasta,
-              seq_type    = self.seq_type,
-              database    = self.refseq.blast_db,
-              num_threads = self.num_threads,
-              filtering   = {'max_targets':  25,
-                             'e_value':      self.e_value,
-                             'min_identity': self.min_identity,
-                             'min_coverage': self.min_coverage},
-              params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
+            algorithm    = "blast",
+            input_fasta  = self.fresh_fasta,
+            seq_type     = self.seq_type,
+            database     = self.refseq.blast_db,
+            num_parts    = 200,
+            filtering    = {'max_targets' : 50,
+                            'e_value'     : self.e_value,
+                            'min_identity': self.min_identity,
+                            'min_coverage': self.min_coverage},
+            params       = {'-outfmt'     : '"6 qseqid sseqid bitscore pident qcovs"'},
+            slurm_params = {'time'        : '7-00:00:00',
+                            'cores'       : 1,
+                            'project'     : 'b2011035',
+                            'partition'   : 'core'})
 
     @property
     def search_results(self):

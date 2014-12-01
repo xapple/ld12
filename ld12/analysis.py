@@ -107,7 +107,7 @@ class Analysis(object):
               filtering   = {'e_value':      self.e_value,
                              'min_identity': self.min_identity,
                              'min_coverage': self.min_coverage},
-              params      = {'-outfmt' : "6 qseqid sseqid bitscore pident qcovs"})
+              params      = {'-outfmt' : '"6 qseqid sseqid bitscore pident qcovs"'})
 
     @property
     def search_results(self):

@@ -66,7 +66,7 @@ class Genome(FASTA):
     def in_refseq_bact(self):
         """Has this organism been included in the latest version of
         the refseq bacterial database?"""
-        handle = Entrez.esearch(db="nucleotide", retmax=10, term=self.info['taxon'])
+        handle = Entrez.esearch(db="protein", retmax=10, term=self.info['taxon'])
         results = Entrez.read(handle)
         handle.close()
         count = int(results['Count'])
