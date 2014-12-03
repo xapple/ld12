@@ -56,6 +56,9 @@ class Comparison(object):
         # Check every one of the good clusters #
         print "Computing which clusters are collapsing..."
         for c in tqdm(self.analysis.best_clusters):
+            if not c.p.RAxML.exists:
+                print "Warning: cluster %s is missing a tree, skipping" % c
+                continue
             for f in families.values():
                 if len([g for g in c if g.genome.family == f]) == 1: continue
                 if c.tree_ete.check_monophyly(values=[f.name], target_attr="family")[0]: continue
