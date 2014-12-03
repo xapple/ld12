@@ -8,7 +8,6 @@ from seqsearch.blast import BLASTdb
 from plumbing.autopaths import AutoPaths
 from plumbing.cache import property_cached
 from seqsearch.databases.refseq import refseq_bact_prot_nr, refseq_arch_prot_nr
-from fasta import FASTA
 
 # Third party modules #
 from shell_command import shell_output
