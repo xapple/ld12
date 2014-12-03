@@ -8,7 +8,7 @@ from ld12.refseq import RefSeqProkPlusMarine
 
 # First party modules #
 from seqsearch.parallel import ParallelSeqSearch
-from seqsearch.common import UtilsNCBI
+from seqsearch.ncbi import UtilsNCBI
 from plumbing.cache import property_cached, property_pickled
 from plumbing.autopaths import AutoPaths
 from plumbing.common import split_thousands
@@ -47,7 +47,6 @@ class Duplications(object):
                  min_coverage = 0.5):
         # Attributes #
         self.analysis    = analysis
-        self.clusters    = analysis.fresh_clusters
         self.seq_type    = analysis.seq_type
         self.num_threads = analysis.num_threads
         self.timer       = analysis.timer
