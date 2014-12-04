@@ -99,7 +99,7 @@ class Cluster(object):
         """We run into a problem sometimes when gblocks filters out
         all nucleotides from a sequences leaving only gaps.
         This makes raxml very unhappy. This function checks if any such
-        sequences exists with only gaps"""
+        sequences exists with only gaps."""
         for read in self.alignment:
             if read.seq.count('-') == len(read.seq): return True
         return False

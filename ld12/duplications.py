@@ -18,6 +18,7 @@ from fasta import FASTA
 # Third party modules #
 import pandas
 from shell_command import shell_output
+from tqdm import tqdm
 
 # Plot #
 import matplotlib
@@ -111,11 +112,34 @@ class Duplications(object):
         # Parse the results #
         return self.search.results
 
+    @property_cached
+    def all_gis(self):
+        """Extract all GI numbers we found in the search results"""
+        # Message #
+        if self.search_results: print "Parsing the best hits file..."
+        # Main loop #
+        gis = set()
+        for line in self.search_results:
+            hit_id = line[1]
+            if not hit_id.startswith('gi'): continue
+            gi_num = hit_id.split('|')[1]
+            gis.add(gi_num)
+        return gis
+
+    @property_pickled
+    def gi_to_record(self):
+        """Link all possible GIs we found to their records and save the result"""
+        # Message #
+        print "Downloading records from NCBI for %i GIs..." % len(self.all_gis)
+        # Download in batch #
+        ncbi = UtilsNCBI()
+        gis = list(self.all_gis)
+        records = ncbi.gis_to_records(gis)
+        return dict(zip(gis,records))
+
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
         object in each freshwater Genome object"""
-        # Message #
-        if self.search_results: print "Parsing the best hits file..."
         # Only one best hit per gene #
         last_query_id = -1
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
@@ -141,12 +165,6 @@ class Duplications(object):
         # Done #
         self.timer.print_elapsed()
 
-    @property_pickled
-    def gi_to_record(self):
-        """Link all possible GIs we found to their record and save the result"""
-        # Download in batch #
-        ncbi = UtilsNCBI()
-        return ncbi.gis_to_records([g.gi_num for g in self.ncbi_hit_genes])
 
     def assign_taxonomy(self):
         """Use the best hit information for each Gene object to add the taxonomy

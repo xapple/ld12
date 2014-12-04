@@ -117,6 +117,8 @@ class Comparison(object):
     def split_three_a_b(self):
         """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
         just for that split."""
+        # Message #
+        print "Computing which tree conserve 3a-3b..."
         # Let's maintain two lists #
         split_conserved = []
         split_broken    = []
@@ -131,8 +133,8 @@ class Comparison(object):
         # These clusters also match the query #
         good_clusters += self.collapsible
         # Let's check if IIIa and IIIb are linked by a node #
-        for cluster in good_clusters:
-            tree = cluster.tree_ete.copy(method='deepcopy')
+        for cluster in tqdm(good_clusters):
+            tree = cluster.tree_ete.copy()
             self.collapse_families(tree, fams)
             a = tree.search_nodes(family='IIIa')
             b = tree.search_nodes(family='IIIb')
@@ -163,24 +165,27 @@ class Comparison(object):
         """For every tree, are the splits of the master tree conserved ?
         Is the tree monophyletic for 3a and 3b? Is the tree monophyletic
         for 3a, 3b and 5 ? etc. all the way up"""
+        # Message #
+        print "Computing which trees conserve the ribosomal splits..."
         # The result for every tree #
         result = {}
-        groups = [('IIIa', 'IIIb', 'V', 'II', 'Ic', 'Ia', 'Ib')]
+        groups = ['IIIa', 'IIIb', 'V', 'II', 'Ic', 'Ia', 'Ib']
         # Main loop #
         for c in tqdm(self.analysis.best_clusters):
             if not c.p.bestTree.exists:
                 print "Warning: cluster %s is missing a tree, skipping" % c
                 continue
+            result[c.name] = {}
             for i, g in enumerate(groups):
-                group = groups[0:i+1]
-                conserved = c.tree_ete.check_monophyly(values=[group], target_attr="family")[0]
+                group = tuple(groups[0:i+1])
+                conserved = c.tree_ete.check_monophyly(values=group, target_attr="family")[0]
                 result[c.name][group] = conserved
         # Make a dataframe #
         result = pandas.DataFrame(result)
         # Calculate a summary #
         summary = {}
         for i, g in enumerate(groups):
-            group = groups[0:i+1]
+            group = tuple(groups[0:i+1])
             ok = (result.loc[group] == True)
             summary[group] = ok / len(self.analysis.best_clusters)
         # Put everything together #
@@ -200,15 +205,16 @@ class Comparison(object):
         """Taking only clusters that are collapsible, we can ask: do they
         match the same topology as the ribosomal master tree ? This can be
         done since we can collapse each family into one leaf."""
+        # Message #
+        print "Computing which clusters are matching..."
         # We are going to maintain two lists and one string #
         matching = []
         mismatching = []
         mismatching_stats = ""
         # Check every one of the collapsible clusters #
-        print "Computing which clusters are matching..."
         for c in tqdm(self.collapsible):
             # Make a copy #
-            tree = c.tree_ete.copy(method='deepcopy')
+            tree = c.tree_ete.copy()
             # Collapse families into one leaf #
             self.collapse_families(tree, families.values())
             # Compare with rib master reference #
