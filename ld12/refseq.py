@@ -20,7 +20,9 @@ class RefSeqProkPlusMarine(object):
     already added to RefSeq."""
 
     all_paths = """
-    /modified_refseq_bact/
+
+
+
     /all_genes.fasta
     /all_genes.fasta.00.pin
     /log.txt
@@ -46,16 +48,16 @@ class RefSeqProkPlusMarine(object):
         blast_db = BLASTdb(self.p.genes, 'prot')
         if not self.p.genes.exists:
             # We are going to cat a whole of files together #
-            if self.refseq_bact_mod: print "Regrouping all fasta files together..."
+            print "Regrouping all fasta files together..."
             all_genes = self.refseq_bact_orig   \
-                        + self.refseq_arch_orig \
-                        + self.missing_marine   \
-                        + self.missing_fresh
+                      + self.refseq_arch_orig \
+                      + self.missing_marine   \
+                      + self.missing_fresh
             shell_output("zcat %s > %s" % (' '.join(all_genes), self.p.genes))
             self.timer.print_elapsed()
             # Check that all files ended with a newline #
             print "Checking that sequence counts match..."
-            assert len(blast_db) == sum(map(len,self.refseq_bact_mod))  \
+            assert len(blast_db) == sum(map(len,self.refseq_bact_orig))  \
                                   + sum(map(len,self.refseq_arch_orig)) \
                                   + sum(map(len,self.missing_marine))   \
                                   + sum(map(len,self.missing_fresh))

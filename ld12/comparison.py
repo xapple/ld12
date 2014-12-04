@@ -45,6 +45,8 @@ class Comparison(object):
             ancestor.family = f.name
 
     #-------------------------------------------------------------------------#
+    #                             COLLAPSING                                  #
+    #-------------------------------------------------------------------------#
     @property_cached
     def collapsing(self):
         """Clusters that have strict coherence within all the seven families
@@ -56,7 +58,7 @@ class Comparison(object):
         # Check every one of the good clusters #
         print "Computing which clusters are collapsing..."
         for c in tqdm(self.analysis.best_clusters):
-            if not c.p.RAxML.exists:
+            if not c.p.bestTree.exists:
                 print "Warning: cluster %s is missing a tree, skipping" % c
                 continue
             for f in families.values():
@@ -109,39 +111,89 @@ class Comparison(object):
         self.uncollapsible_stats.to_csv(str(self.analysis.p.uncollapsible), sep='\t', encoding='utf-8')
 
     #-------------------------------------------------------------------------#
+    #                             SPLIT 3a-3b                                 #
+    #-------------------------------------------------------------------------#
     @property_cached
     def split_three_a_b(self):
         """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
         just for that split."""
         # Let's maintain two lists #
         split_conserved = []
-        split_broken = []
+        split_broken    = []
         # Families #
         fams = [f for name,f in families.items() if name == 'IIIa' or name == 'IIIb']
         # Trees that are monophyletic for IIIa and IIIb #
-        good_clusters = ((self.uncollapsible_stats['IIIa'] == 'mono') | (self.uncollapsible_stats['IIIa'] == 'single')) & \
-                        ((self.uncollapsible_stats['IIIb'] == 'mono') | (self.uncollapsible_stats['IIIb'] == 'single'))
+        good_clusters = ((self.uncollapsible_stats['IIIa'] == 'mono') | \
+                         (self.uncollapsible_stats['IIIa'] == 'single')) & \
+                        ((self.uncollapsible_stats['IIIb'] == 'mono') | \
+                         (self.uncollapsible_stats['IIIb'] == 'single'))
         good_clusters = [c for c in self.uncollapsible if good_clusters[c.name]]
         # These clusters also match the query #
         good_clusters += self.collapsible
         # Let's check if IIIa and IIIb are linked by a node #
         for cluster in good_clusters:
-            tree = cluster.tree_ete
+            tree = cluster.tree_ete.copy(method='deepcopy')
             self.collapse_families(tree, fams)
             a = tree.search_nodes(family='IIIa')
             b = tree.search_nodes(family='IIIb')
             assert len(a) == 1
             assert len(b) == 1
-            if a[0].up is b[0].up: split_conserved += [cluster]
-            else:                  split_broken    += [cluster]
+            # Do they share the same parent #
+            if not (a[0].up is b[0].up):
+                split_broken += [cluster]
+                continue
+            # Is the bootstrap value sufficient #
+            if a[0].support >= 80:
+                split_conserved += [cluster]
+            else:
+                split_broken    += [cluster]
         # Results #
         return split_conserved, split_broken
 
-    def save_split_stats(self):
+    def save_split_three_a_b(self):
         """Save the dataframe above in a CSV file"""
         content = 'Conserved: %i\nBroken: %i' % (len(self.split_three_a_b[0]), len(self.split_three_a_b[1]))
-        self.analysis.p.split.write(content)
+        self.analysis.p.three.write(content)
 
+    #-------------------------------------------------------------------------#
+    #                          SPLITS CONSERVED                               #
+    #-------------------------------------------------------------------------#
+    @property_cached
+    def splits_conserved(self):
+        """For every tree, are the splits of the master tree conserved ?
+        Is the tree monophyletic for 3a and 3b? Is the tree monophyletic
+        for 3a, 3b and 5 ? etc. all the way up"""
+        # The result for every tree #
+        result = {}
+        groups = [('IIIa', 'IIIb', 'V', 'II', 'Ic', 'Ia', 'Ib')]
+        # Main loop #
+        for c in tqdm(self.analysis.best_clusters):
+            if not c.p.bestTree.exists:
+                print "Warning: cluster %s is missing a tree, skipping" % c
+                continue
+            for i, g in enumerate(groups):
+                group = groups[0:i+1]
+                conserved = c.tree_ete.check_monophyly(values=[group], target_attr="family")[0]
+                result[c.name][group] = conserved
+        # Make a dataframe #
+        result = pandas.DataFrame(result)
+        # Calculate a summary #
+        summary = {}
+        for i, g in enumerate(groups):
+            group = groups[0:i+1]
+            ok = (result.loc[group] == True)
+            summary[group] = ok / len(self.analysis.best_clusters)
+        # Put everything together #
+        result['summary'] = pandas.Series(summary)
+        result = result.transpose()
+        return result
+
+    def save_split_conserved(self):
+        """Save the dataframe above in a CSV file"""
+        self.splits_conserved.to_csv(str(self.analysis.p.conserved), sep='\t', encoding='utf-8')
+
+    #-------------------------------------------------------------------------#
+    #                          MATCHING WITH REF                              #
     #-------------------------------------------------------------------------#
     @property_cached
     def matches(self):

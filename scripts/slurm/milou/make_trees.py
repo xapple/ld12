@@ -26,12 +26,15 @@ print "SLURM: start at {0} on {1}".format(now, platform.node())
 
 # Do it #
 a = Analysis(out_dir=out_dir)
+
+# Long job #
+#a.make_trees()
 assert all([c.p.bestTree.exists for c in a.best_clusters])
-a.make_trees()
 
 # Stats #
 a.comparison.save_uncollapsible_stats()
-a.comparison.save_split_stats()
+a.comparison.save_split_three_a_b()
+a.comparison.save_split_conserved()
 a.comparison.save_mismatching_stats()
 
 # End #

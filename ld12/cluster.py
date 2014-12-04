@@ -26,6 +26,8 @@ class Cluster(object):
     /filtered_genes.aln
     /tree/
     /tree/RAxML_bestTree.tree
+    /tree/RAxML_bipartitions.tree
+    /tree/RAxML_bipartitionsBranchLabels.tree
     """
 
     def __repr__(self): return '<%s object "%s">' % (self.__class__.__name__, self.name)
@@ -102,6 +104,9 @@ class Cluster(object):
             if read.seq.count('-') == len(read.seq): return True
         return False
 
+    #-------------------------------------------------------------------------#
+    #                                   TREE                                  #
+    #-------------------------------------------------------------------------#
     @property
     def tree(self):
         """The path to the tree built with raxml"""
@@ -131,13 +136,12 @@ class Cluster(object):
         """The tree as an object in python memory from biopython"""
         return Phylo.read(self.tree, 'newick')
 
-    @property_cached
-    def tree_ete(self):
-        """The tree as an object in python memory from ETE2
+    def parse_tree_ete(self, path):
+        """Utility function: load a tree in memory with ETE2
         We can add attributes to the leaves useful for the comparisons
         that we perform later on."""
         # Load it #
-        tree = ete2.Tree(self.tree)
+        tree = ete2.Tree(path)
         # Add info to leaves #
         for leaf in tree:
             gene = genes[leaf.name]
@@ -151,6 +155,11 @@ class Cluster(object):
         # Return results #
         return tree
 
+    @property_cached
+    def tree_ete(self):
+        """The tree as an object in python memory from ETE2"""
+        return self.parse_tree_ete(self.tree)
+
     def print_tree(self):
         """Render it as ASCII on your terminal"""
         print self.tree_dp.as_ascii_plot()
@@ -158,3 +167,14 @@ class Cluster(object):
     def draw_tree(self):
         """120 pixels per branch length unit"""
         self.tree_ete.render(self.tree.replace_extension('pdf'))
+
+    #-------------------------------------------------------------------------#
+    #                            TREE LABELS                                  #
+    #-------------------------------------------------------------------------#
+    @property_cached
+    def tree_labels_ete(self):
+        assert self.tree
+        tree = self.parse_tree_ete(self.p.bipartitions)
+        rf, max_rf, co, p1, p2 = tree.robinson_foulds(self.tree_ete)
+        assert rf == 0
+        return tree

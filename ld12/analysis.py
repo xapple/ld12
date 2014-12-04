@@ -45,7 +45,8 @@ class Analysis(object):
     /user_outputs/family_table.tsv
     /user_outputs/uncollapsible_stats.tsv
     /user_outputs/mismatching_stats.txt
-    /user_outputs/split_stats.txt
+    /user_outputs/split_three_a_stats.txt
+    /user_outputs/split_conserved.tsv
     /user_outputs/duplications_stats.txt
     """
 
