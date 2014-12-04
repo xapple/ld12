@@ -118,34 +118,36 @@ class Comparison(object):
         """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
         just for that split."""
         # Message #
-        print "Computing which tree conserve 3a-3b..."
+        print "Computing which trees conserve 3a-3b..."
         # Let's maintain two lists #
         split_conserved = []
         split_broken    = []
         # Families #
         fams = [f for name,f in families.items() if name == 'IIIa' or name == 'IIIb']
-        # Trees that are monophyletic for IIIa and IIIb #
-        good_clusters = ((self.uncollapsible_stats['IIIa'] == 'mono') | \
-                         (self.uncollapsible_stats['IIIa'] == 'single')) & \
-                        ((self.uncollapsible_stats['IIIb'] == 'mono') | \
-                         (self.uncollapsible_stats['IIIb'] == 'single'))
-        good_clusters = [c for c in self.uncollapsible if good_clusters[c.name]]
-        # These clusters also match the query #
-        good_clusters += self.collapsible
-        # Let's check if IIIa and IIIb are linked by a node #
-        for cluster in tqdm(good_clusters):
-            tree = cluster.tree_ete.copy()
+        # Main loop #
+        for cluster in tqdm(self.analysis.best_clusters):
+            # Tree with bootstrap values #
+            tree = cluster.tree_labels_ete
+            # Mono A #
+            if not tree.check_monophyly(values=['IIIa'], target_attr="family")[0]:
+                split_broken += [cluster]
+                continue
+            # Mono B #
+            if not tree.check_monophyly(values=['IIIb'], target_attr="family")[0]:
+                split_broken += [cluster]
+                continue
+            # Collapse #
             self.collapse_families(tree, fams)
             a = tree.search_nodes(family='IIIa')
             b = tree.search_nodes(family='IIIb')
             assert len(a) == 1
             assert len(b) == 1
-            # Do they share the same parent #
+            # Let's check if IIIa and IIIb are linked by a node #
             if not (a[0].up is b[0].up):
                 split_broken += [cluster]
                 continue
             # Is the bootstrap value sufficient #
-            if a[0].support >= 80:
+            if a[0].up.support >= 80:
                 split_conserved += [cluster]
             else:
                 split_broken    += [cluster]
@@ -154,7 +156,8 @@ class Comparison(object):
 
     def save_split_three_a_b(self):
         """Save the dataframe above in a CSV file"""
-        content = 'Conserved: %i\nBroken: %i' % (len(self.split_three_a_b[0]), len(self.split_three_a_b[1]))
+        content = 'Conserved: %i\nBroken: %i' % \
+            (len(self.split_three_a_b[0]), len(self.split_three_a_b[1]))
         self.analysis.p.three.write(content)
 
     #-------------------------------------------------------------------------#
@@ -175,19 +178,24 @@ class Comparison(object):
             if not c.p.bestTree.exists:
                 print "Warning: cluster %s is missing a tree, skipping" % c
                 continue
+            # Empty dict #
             result[c.name] = {}
             for i, g in enumerate(groups):
                 group = tuple(groups[0:i+1])
-                conserved = c.tree_ete.check_monophyly(values=group, target_attr="family")[0]
-                result[c.name][group] = conserved
+                group_name = '+'.join(group)
+                conserved = c.tree_ete.check_monophyly(values=group, target_attr="family")[1]
+                conserved = (conserved == 'paraphyletic') or \
+                            (conserved == 'monophyletic')
+                result[c.name][group_name] = conserved
         # Make a dataframe #
         result = pandas.DataFrame(result)
         # Calculate a summary #
         summary = {}
         for i, g in enumerate(groups):
             group = tuple(groups[0:i+1])
-            ok = (result.loc[group] == True)
-            summary[group] = ok / len(self.analysis.best_clusters)
+            group_name = '+'.join(group)
+            ok = (result.loc[group_name] == True).sum()
+            summary[group_name] = ok / len(self.analysis.best_clusters)
         # Put everything together #
         result['summary'] = pandas.Series(summary)
         result = result.transpose()

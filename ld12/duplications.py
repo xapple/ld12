@@ -18,7 +18,6 @@ from fasta import FASTA
 # Third party modules #
 import pandas
 from shell_command import shell_output
-from tqdm import tqdm
 
 # Plot #
 import matplotlib
@@ -134,8 +133,7 @@ class Duplications(object):
         # Download in batch #
         ncbi = UtilsNCBI()
         gis = list(self.all_gis)
-        records = ncbi.gis_to_records(gis)
-        return dict(zip(gis,records))
+        return ncbi.gis_to_records(gis)
 
     def assign_best_hits(self):
         """Parse the results and add the best hit information for each Gene
