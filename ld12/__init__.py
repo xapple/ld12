@@ -6,6 +6,10 @@ __version__ = '0.9.0'
 # Built-in modules #
 import sys, os, glob
 
+# No need for an X display #
+import matplotlib
+matplotlib.use('Agg', warn=False)
+
 # Internal modules #
 from ld12.genome import Genome
 from ld12.family import Family

@@ -18,6 +18,7 @@ from fasta import FASTA
 # Third party modules #
 import pandas
 from shell_command import shell_output
+from tqdm import tqdm
 
 # Plot #
 import matplotlib
@@ -59,6 +60,9 @@ class Duplications(object):
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # The database #
         self.refseq = RefSeqProkPlusMarine(self.p.database_dir, self)
+        # Fresh genes #
+        self.fresh_genes = [g for G in genomes.values() for g in G.genes.values() if G.fresh]
+        self.genome_names = [G.info['taxon'] for G in genomes.values()]
         # The final plot #
         self.plot = TaxonomyPlot(self)
 
@@ -124,76 +128,120 @@ class Duplications(object):
             gi_num = hit_id.split('|')[1]
             gis.add(gi_num)
         return gis
+        # Done #
+        self.timer.print_elapsed()
 
     @property_pickled
     def gi_to_record(self):
-        """Link all possible GIs we found to their records and save the result"""
+        """Link all possible GIs we found to their records and save the result."""
         # Message #
         print "Downloading records from NCBI for %i GIs..." % len(self.all_gis)
         # Download in batch #
         ncbi = UtilsNCBI()
         gis = list(self.all_gis)
         return ncbi.gis_to_records(gis)
-
-    def assign_best_hits(self):
-        """Parse the results and add the best hit information for each Gene
-        object in each freshwater Genome object"""
-        # Only one best hit per gene #
-        last_query_id = -1
-        for query_id, hit_id, bitscore, identity, coverage in self.search_results:
-            if query_id != last_query_id:
-                gene = genes[query_id]
-                gene.best_hit = hit_id
-                last_query_id = query_id
-                continue
-        # Make groups #
-        self.fresh_genes      = [g for g in genes.values() if g.genome.fresh]
-        self.hit_genes        = [g for g in self.fresh_genes if hasattr(g, 'best_hit')]
-        self.no_hit_genes     = [g for g in self.fresh_genes if not hasattr(g, 'best_hit')]
-        self.ncbi_hit_genes   = [g for g in self.hit_genes if g.best_hit.startswith('gi')]
-        self.marine_hit_genes = [g for g in self.hit_genes if not g.best_hit.startswith('gi')]
-        # Check there are no others #
-        assert sum(map(len, (self.marine_hit_genes, self.ncbi_hit_genes, self.no_hit_genes))) == len(self.fresh_genes)
-        # Extract numbers #
-        for gene in self.ncbi_hit_genes: gene.gi_num = gene.best_hit.split('|')[1]
-        # Extract gene objects #
-        for gene in self.marine_hit_genes: gene.marine_hit = genes[gene.best_hit]
-        # All possible GI numbers #
-        self.all_gi_nums = [g.gi_num for g in self.ncbi_hit_genes]
         # Done #
         self.timer.print_elapsed()
 
-
-    def assign_taxonomy(self):
-        """Use the best hit information for each Gene object to add the taxonomy
-        information of each best hit to each Gene object"""
-        print "Linking GI numbers to their NCBI taxonomy..."
-        ncbi = UtilsNCBI()
-        for g in self.no_hit_genes:     g.taxonomy = None
-        for g in self.marine_hit_genes: g.taxonomy = g.marine_hit.genome.family.name
-        for g in self.ncbi_hit_genes:   g.taxonomy = ncbi.record_to_taxonomy(self.gi_to_record[g.gi_num])
+    #-------------------------------------------------------------------------#
+    #                                 HITS                                    #
+    #-------------------------------------------------------------------------#
+    def assign_hits(self):
+        """Parse the results and add the hits information for each Gene
+        object in each freshwater Genome object."""
+        # Just assign #
+        for query_id, hit_id, bitscore, identity, coverage in self.search_results:
+            gene = genes[query_id].raw_hits.append(hit_id)
+        # Load #
+        print "Loading all NCBI records into RAM..."
+        print "Got %i records." % len(self.gi_to_record)
+        self.timer.print_elapsed()
+        # Process #
+        print "Processing top hits for %i genes..." % len(self.fresh_genes)
+        for gene in tqdm(self.fresh_genes):
+            result = []
+            for hit_id in gene.raw_hits:
+                # The id #
+                hit = {'id': hit_id}
+                # The source: refseq, missing #
+                if hit_id.startswith('gi'):
+                    hit['source'] = "refseq"
+                else:
+                    hit['source'] = "missing"
+                    hit['gene']   = genes[hit_id]
+                    hit['genome'] = hit['gene'].genome
+                # The type: marine, fresh, other #
+                if hit['source'] == "missing":
+                    hit['type'] = hit['gene'].genome.environ
+                if hit['source'] == "refseq":
+                    hit['gi_num'] = hit_id.split('|')[1]
+                    hit['record'] = self.gi_to_record[hit['gi_num']]
+                    hit['header'] = hit['record']['GBSeq_organism']
+                    if not any(name in hit['header'] for name in self.genome_names):
+                        hit['type'] = 'other'
+                    else:
+                        hit['genome'] = [G for G in genomes.values() if G.info['taxon'] in hit['header']][0]
+                        hit['type']   = hit['genome'].environ
+                # The taxonomy #
+                if hit['type'] == "other": hit['taxonomy'] = hit['record']['GBSeq_taxonomy']
+                else:                      hit['taxonomy'] = hit['genome'].family.name
+                # Append it #
+                result.append(hit)
+                # Stop at the first non-fresh #
+                if hit['type'] != "fresh": break
+            gene.hits = result
+        # Group into categories #
+        self.no_hit_genes   = [g for g in self.fresh_genes if len(g.raw_hits) == 0]
+        self.yes_hit_genes  = [g for g in self.fresh_genes if len(g.raw_hits) != 0]
+        self.top_is_fresh   = [g for g in self.yes_hit_genes if g.hits[0]['type'] == 'fresh']
+        self.best_is_marine = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'marine']
+        self.best_is_other  = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'other']
+        # Done #
         self.timer.print_elapsed()
 
     @property
-    def duplications_stats(self):
+    def hit_stats(self):
         yield """
         Total fresh water genes: %s
-        Did not get a top hit: %s
-        Did get a top hit against one of the marine genes: %s
-        Did get a top hit against one of the other NCBI genes: %s
+        Did not get any hits all: %s
+        The absolute top hit is against a fresh water genome: %s
+        The first non-fresh hit is against one of the marine genomes: %s
+        The first non-fresh hit is against one of the other NCBI genomes: %s
         \n\n""" % (len(self.fresh_genes),
                    len(self.no_hit_genes),
-                   len(self.marine_hit_genes),
-                   len(self.ncbi_hit_genes))
-        yield "Gene name\tHit type\tHit reference\tHit taxonomy\n"
-        for g in self.no_hit_genes:     yield g.name + "\t" + "No hit" + '\t' + "None" + "\t" + "None" + '\n'
-        for g in self.marine_hit_genes: yield "\t".join((g.name, "Marine hit", g.marine_hit.name, g.taxonomy)) + '\n'
-        for g in self.ncbi_hit_genes:   yield "\t".join((g.name, "NCBI hit",   g.gi_num,          g.taxonomy)) + '\n'
-        yield '\n'
+                   len(self.top_is_fresh),
+                   len(self.best_is_marine),
+                   len(self.best_is_other))
+
+    def save_hit_stats(self):
+        """Save the results"""
+        self.analysis.p.hit_stats.writelines(self.hit_stats)
+
+    #-------------------------------------------------------------------------#
+    #                             DUPLICATION                                 #
+    #-------------------------------------------------------------------------#
+    @property
+    def duplications_stats(self):
+        result = OrderedDict()
+        for g in self.fresh_genes:
+            # Basic stats #
+            result[g.name] = OrderedDict()
+            result[g.name]['genome']                = g.genome.name
+            result[g.name]['# of hits']             = len(g.raw_hits)
+            result[g.name]['# of fresh hits']       = len([h for h in g.hits if h['type'] == 'fresh'])
+            result[g.name]['Is there a marine hit'] = len([h for h in g.hits if h['type'] == 'marine'])
+            result[g.name]['Is there a refseq hit'] = len([h for h in g.hits if h['type'] == 'other'])
+            # The hits not in this genome #
+            fresh_outsiders = [h for h in g.hits if h['type'] == 'fresh' and h['genome'] is not g.genome]
+            result[g.name]['# of fresh hits not in genome'] = len(fresh_outsiders)
+        # Make a dataframe #
+        result = pandas.DataFrame(result)
+        result = result.transpose()
+        return result
 
     def save_duplications_stats(self):
-        """Save the results"""
-        self.analysis.p.duplications.writelines(self.duplications_stats)
+        """Save the dataframe above in a CSV file"""
+        self.duplications_stats.to_csv(str(self.analysis.p.duplications), sep='\t', encoding='utf-8')
 
 ###############################################################################
 class TaxonomyPlot(Graph):
@@ -206,7 +254,7 @@ class TaxonomyPlot(Graph):
         no_hits = {"No hits": len(self.parent.no_hit_genes)}
         # The marine hits #
         fams = OrderedDict([(f,0) for f in families])
-        for g in self.parent.marine_hit_genes: fams[g.taxonomy] += 1
+        for g in self.parent.best_is_marine: fams[g.hits[-1]['taxonomy']] += 1
         # Then the ncbi hits #
         categories = OrderedDict((('Life',0),
                                   ('Bacteria',0),
@@ -214,8 +262,8 @@ class TaxonomyPlot(Graph):
                                   ('Alphaproteobacteria',0),
                                   ('SAR11 cluster',0),
                                   ('Candidatus Pelagibacter',0)))
-        for g in self.parent.ncbi_hit_genes:
-            tax = g.taxonomy.split(';')
+        for g in self.parent.best_is_other:
+            tax = g.hits[-1]['taxonomy'].split(';')
             tax.append("")
             tax.append("")
             tax.append("")

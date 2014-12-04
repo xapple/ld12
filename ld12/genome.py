@@ -62,6 +62,12 @@ class Genome(FASTA):
         """Is this organism a marine orgiansm?"""
         return not self.fresh
 
+    @property
+    def environ(self):
+        """Is it fresh or marine?"""
+        assert self.fresh is not self.marine
+        return "fresh" if self.fresh else "marine"
+
     @property_pickled
     def in_refseq_bact(self):
         """Has this organism been included in the latest version of

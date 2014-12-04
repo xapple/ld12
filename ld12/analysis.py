@@ -47,7 +47,8 @@ class Analysis(object):
     /user_outputs/mismatching_stats.txt
     /user_outputs/split_three_a_stats.txt
     /user_outputs/split_conserved.tsv
-    /user_outputs/duplications_stats.txt
+    /user_outputs/hit_stats.txt
+    /user_outputs/duplications_stats.tsv
     """
 
     def __repr__(self): return '<%s object with %i genomes>' % \

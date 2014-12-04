@@ -2,6 +2,7 @@
 import re
 
 # First party modules #
+from plumbing.cache import property_cached
 
 # Third party modules #
 
@@ -13,10 +14,11 @@ class Gene(object):
     def __str__(self): return str(self.seq.seq)
 
     def __init__(self, seq, genome):
-        self.seq = seq
-        self.name = seq.id
-        self.genome = genome
+        self.seq        = seq
+        self.name       = seq.id
+        self.genome     = genome
         self.annotation = None # Filled in by the __init__.py
+        self.raw_hits   = []   # Filled in by the duplications.py
 
     @property
     def long_name(self):
