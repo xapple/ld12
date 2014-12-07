@@ -49,6 +49,7 @@ class Analysis(object):
     /user_outputs/split_conserved.tsv
     /user_outputs/hit_stats.txt
     /user_outputs/duplications_stats.tsv
+    /user_outputs/blast_stats.tsv
     """
 
     def __repr__(self): return '<%s object with %i genomes>' % \
@@ -157,9 +158,7 @@ class Analysis(object):
 
     @property_cached
     def best_clusters(self):
-        """Subset of self.clusters. We want to find the clusters that have exactly one
-        member in each of the genomes. Some genomes are partial so we could be more
-        flexible on those ones. The final selection strategy is there is at least one
+        """The final selection strategy is there is at least one
         representative per family and the total count of genes is no more than 30.
         We also kick out clusters with sequences presenting only gaps."""
         return [c for c in self.clusters if len(c.families) == len(families)

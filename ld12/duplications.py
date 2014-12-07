@@ -151,7 +151,7 @@ class Duplications(object):
         object in each freshwater Genome object."""
         # Just assign #
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
-            gene = genes[query_id].raw_hits.append(hit_id)
+            gene = genes[query_id].raw_hits.append((hit_id, bitscore))
         # Load #
         print "Loading all NCBI records into RAM..."
         print "Got %i records." % len(self.gi_to_record)
@@ -160,9 +160,9 @@ class Duplications(object):
         print "Processing top hits for %i genes..." % len(self.fresh_genes)
         for gene in tqdm(self.fresh_genes):
             result = []
-            for hit_id in gene.raw_hits:
-                # The id #
-                hit = {'id': hit_id}
+            for hit_id, bitscore in gene.raw_hits:
+                # The id and score #
+                hit = {'id':    hit_id, 'score': bitscore}
                 # The source: refseq, missing #
                 if hit_id.startswith('gi'):
                     hit['source'] = "refseq"
@@ -227,6 +227,7 @@ class Duplications(object):
             # Basic stats #
             result[g.name] = OrderedDict()
             result[g.name]['genome']                = g.genome.name
+            result[g.name]['taxon']                 = g.genome.info['taxon']
             result[g.name]['# of hits']             = len(g.raw_hits)
             result[g.name]['# of fresh hits']       = len([h for h in g.hits if h['type'] == 'fresh'])
             result[g.name]['Is there a marine hit'] = len([h for h in g.hits if h['type'] == 'marine'])
@@ -235,13 +236,33 @@ class Duplications(object):
             fresh_outsiders = [h for h in g.hits if h['type'] == 'fresh' and h['genome'] is not g.genome]
             result[g.name]['# of fresh hits not in genome'] = len(fresh_outsiders)
         # Make a dataframe #
-        result = pandas.DataFrame(result)
+        result = pandas.DataFrame.from_dict(result)
         result = result.transpose()
         return result
 
     def save_duplications_stats(self):
         """Save the dataframe above in a CSV file"""
         self.duplications_stats.to_csv(str(self.analysis.p.duplications), sep='\t', encoding='utf-8')
+
+    @property
+    def blast_stats(self):
+        columns = ['Query gene', 'Query genome', 'Query taxon',
+                   'Hit number', 'Hit Type', 'Hit source', 'Hit ID', 'Hit bit score',
+                   'Hit Taxonomy', 'Hit is in same genome as query']
+        result = []
+        # Main loop #
+        for g in self.fresh_genes:
+            for i, hit in enumerate(g.hits):
+                result.append((g.name, g.genome.name, g.genome.info['taxon'],
+                               i+1 , hit['type'], hit['source'], hit['id'], hit['score'],
+                               hit['taxonomy'], hit['type'] == 'fresh' and hit['genome'] is g.genome))
+        # Make a data frame #
+        result = pandas.DataFrame(result, columns=columns)
+        return result
+
+    def save_blast_stats(self):
+        """Save the dataframe above in a CSV file"""
+        self.blast_stats.to_csv(str(self.analysis.p.user_outputs_dir + 'blast_stats.tsv'), sep='\t', encoding='utf-8')
 
 ###############################################################################
 class TaxonomyPlot(Graph):
@@ -285,6 +306,5 @@ class TaxonomyPlot(Graph):
         axes.set_title("Taxonomy distribution for the best hit against refseq for all freshwater genes")
         axes.set_ylabel("Number of best hits with this taxonomy")
         axes.xaxis.grid(True)
-        axes.set_yscale('symlog')
         self.save_plot(fig, axes, sep=('y',))
         pyplot.close(fig)

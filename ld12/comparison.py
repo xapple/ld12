@@ -10,7 +10,7 @@ from ld12 import families
 
 # First party modules #
 from plumbing.cache import property_cached
-from plumbing.common import pad_with_whitespace, mirror_lines, concatenate_by_line
+from plumbing.common import pad_with_whitespace, mirror_lines, concatenate_by_line, all_combinations
 
 # Third party modules #
 import pandas
@@ -167,12 +167,14 @@ class Comparison(object):
     def splits_conserved(self):
         """For every tree, are the splits of the master tree conserved ?
         Is the tree monophyletic for 3a and 3b? Is the tree monophyletic
-        for 3a, 3b and 5 ? etc. all the way up"""
+        for 3a, 3b and 5 ? etc. all the way up with all possible combinations"""
         # Message #
         print "Computing which trees conserve the ribosomal splits..."
         # The result for every tree #
         result = {}
-        groups = ['IIIa', 'IIIb', 'V', 'II', 'Ic', 'Ia', 'Ib']
+        groups = [f for f in families]
+        combinations = list(all_combinations(groups))
+        combinations.pop(0) # remove the empty set
         # Main loop #
         for c in tqdm(self.analysis.best_clusters):
             if not c.p.bestTree.exists:
@@ -180,22 +182,20 @@ class Comparison(object):
                 continue
             # Empty dict #
             result[c.name] = {}
-            for i, g in enumerate(groups):
-                group = tuple(groups[0:i+1])
-                group_name = '+'.join(group)
-                conserved = c.tree_ete.check_monophyly(values=group, target_attr="family")[1]
+            for comb in combinations:
+                comb_name = '+'.join(comb)
+                conserved = c.tree_ete.check_monophyly(values=comb, target_attr="family")[1]
                 conserved = (conserved == 'paraphyletic') or \
                             (conserved == 'monophyletic')
-                result[c.name][group_name] = conserved
-        # Make a dataframe #
+                result[c.name][comb_name] = conserved
+        # Make a data frame #
         result = pandas.DataFrame(result)
         # Calculate a summary #
         summary = {}
-        for i, g in enumerate(groups):
-            group = tuple(groups[0:i+1])
-            group_name = '+'.join(group)
-            ok = (result.loc[group_name] == True).sum()
-            summary[group_name] = ok / len(self.analysis.best_clusters)
+        for comb in combinations:
+            comb_name = '+'.join(comb)
+            ok = (result.loc[comb_name] == True).sum()
+            summary[comb_name] = ok / len(self.analysis.best_clusters)
         # Put everything together #
         result['summary'] = pandas.Series(summary)
         result = result.transpose()
