@@ -162,7 +162,8 @@ class Duplications(object):
             result = []
             for hit_id, bitscore in gene.raw_hits:
                 # The id and score #
-                hit = {'id':    hit_id, 'score': bitscore}
+                hit = {'id':    hit_id,
+                       'score': bitscore}
                 # The source: refseq, missing #
                 if hit_id.startswith('gi'):
                     hit['source'] = "refseq"
@@ -185,6 +186,8 @@ class Duplications(object):
                 # The taxonomy #
                 if hit['type'] == "other": hit['taxonomy'] = hit['record']['GBSeq_taxonomy']
                 else:                      hit['taxonomy'] = hit['genome'].family.name
+                # Skip the ones that are classified as MULTISPECIES #
+                if hit['source'] == "refseq" and 'MULTISPECIES' in hit['record']['GBSeq_definition']: continue
                 # Append it #
                 result.append(hit)
                 # Stop at the first non-fresh #
