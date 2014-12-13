@@ -32,6 +32,7 @@ class Analysis(object):
     all_paths = """
     /clusters/
     /duplications/
+    /fresh_unique/
     /blast/all_genes.fasta
     /blast/all_genes.fasta.nin
     /blast/all_genes.fasta.pin
@@ -84,7 +85,10 @@ class Analysis(object):
         # Add the comparison statistics stuff #
         self.comparison = Comparison(self)
         # Add the blast against refseq for detecting duplications #
-        self.duplications = Duplications(self)
+        self.fresh_genes        = [g for G in genomes.values() for g in G.genes.values() if G.fresh]
+        self.duplications       = Duplications(self, self.fresh_genes, self.p.duplications_dir)
+        self.fresh_unique_genes = list(set([g for c in self.fresh_clusters for g in c]))
+        self.fresh_unique_dups  = Duplications(self, self.fresh_unique_genes, self.p.fresh_unique_dir)
 
     @property_cached
     def blast_db(self):

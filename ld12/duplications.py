@@ -1,5 +1,5 @@
 # Built-in modules #
-import os
+import os, re
 from collections import OrderedDict
 
 # Internal modules #
@@ -40,12 +40,15 @@ class Duplications(object):
     /ncbi_taxonomy/gi_to_record.pickle
     /database/
     /graphs/
+    /user_outputs/hit_stats.txt
+    /user_outputs/duplications_stats.tsv
+    /user_outputs/blast_stats.tsv
     """
 
-    def __init__(self, analysis,
-                 e_value      = 0.001,
-                 min_identity = 0.3,
-                 min_coverage = 0.5):
+    def __init__(self, analysis, genes_to_consider, base_dir,
+                 e_value           = 0.001,
+                 min_identity      = 0.3,
+                 min_coverage      = 0.5):
         # Attributes #
         self.analysis    = analysis
         self.seq_type    = analysis.seq_type
@@ -56,12 +59,12 @@ class Duplications(object):
         self.min_identity = min_identity
         self.min_coverage = min_coverage
         # Paths #
-        self.base_dir = analysis.p.duplications_dir
+        self.base_dir = base_dir
         self.p = AutoPaths(self.base_dir, self.all_paths)
         # The database #
         self.refseq = RefSeqProkPlusMarine(self.p.database_dir, self)
-        # Fresh genes #
-        self.fresh_genes = [g for G in genomes.values() for g in G.genes.values() if G.fresh]
+        # The genes #
+        self.genes = genes_to_consider
         self.genome_names = [G.info['taxon'] for G in genomes.values()]
         # The final plot #
         self.plot = TaxonomyPlot(self)
@@ -157,8 +160,8 @@ class Duplications(object):
         print "Got %i records." % len(self.gi_to_record)
         self.timer.print_elapsed()
         # Process #
-        print "Processing top hits for %i genes..." % len(self.fresh_genes)
-        for gene in tqdm(self.fresh_genes):
+        print "Processing top hits for %i genes..." % len(self.genes)
+        for gene in tqdm(self.genes):
             result = []
             for hit_id, bitscore in gene.raw_hits:
                 # The id and score #
@@ -181,7 +184,9 @@ class Duplications(object):
                     if not any(name in hit['header'] for name in self.genome_names):
                         hit['type'] = 'other'
                     else:
-                        hit['genome'] = [G for G in genomes.values() if G.info['taxon'] in hit['header']][0]
+                        matching_genomes = [G for G in genomes.values() if re.search(G.info['taxon'] + '$', hit['header'])]
+                        assert len(matching_genomes) == 1
+                        hit['genome'] = matching_genomes[0]
                         hit['type']   = hit['genome'].environ
                 # The taxonomy #
                 if hit['type'] == "other": hit['taxonomy'] = hit['record']['GBSeq_taxonomy']
@@ -194,8 +199,8 @@ class Duplications(object):
                 if hit['type'] != "fresh": break
             gene.hits = result
         # Group into categories #
-        self.no_hit_genes   = [g for g in self.fresh_genes if len(g.raw_hits) == 0]
-        self.yes_hit_genes  = [g for g in self.fresh_genes if len(g.raw_hits) != 0]
+        self.no_hit_genes   = [g for g in self.genes if len(g.raw_hits) == 0]
+        self.yes_hit_genes  = [g for g in self.genes if len(g.raw_hits) != 0]
         self.top_is_fresh   = [g for g in self.yes_hit_genes if g.hits[0]['type'] == 'fresh']
         self.best_is_marine = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'marine']
         self.best_is_other  = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'other']
@@ -210,7 +215,7 @@ class Duplications(object):
         The absolute top hit is against a fresh water genome: %s
         The first non-fresh hit is against one of the marine genomes: %s
         The first non-fresh hit is against one of the other NCBI genomes: %s
-        \n\n""" % (len(self.fresh_genes),
+        \n\n""" % (len(self.genes),
                    len(self.no_hit_genes),
                    len(self.top_is_fresh),
                    len(self.best_is_marine),
@@ -218,7 +223,7 @@ class Duplications(object):
 
     def save_hit_stats(self):
         """Save the results"""
-        self.analysis.p.hit_stats.writelines(self.hit_stats)
+        self.p.hit_stats.writelines(self.hit_stats)
 
     #-------------------------------------------------------------------------#
     #                             DUPLICATION                                 #
@@ -226,7 +231,7 @@ class Duplications(object):
     @property
     def duplications_stats(self):
         result = OrderedDict()
-        for g in self.fresh_genes:
+        for g in self.genes:
             # Basic stats #
             result[g.name] = OrderedDict()
             result[g.name]['genome']                = g.genome.name
@@ -245,7 +250,7 @@ class Duplications(object):
 
     def save_duplications_stats(self):
         """Save the dataframe above in a CSV file"""
-        self.duplications_stats.to_csv(str(self.analysis.p.duplications), sep='\t', encoding='utf-8')
+        self.duplications_stats.to_csv(str(self.p.duplications), sep='\t', encoding='utf-8')
 
     @property
     def blast_stats(self):
@@ -254,7 +259,7 @@ class Duplications(object):
                    'Hit Taxonomy', 'Hit is in same genome as query']
         result = []
         # Main loop #
-        for g in self.fresh_genes:
+        for g in self.genes:
             for i, hit in enumerate(g.hits):
                 result.append((g.name, g.genome.name, g.genome.info['taxon'],
                                i+1 , hit['type'], hit['source'], hit['id'], hit['score'],
@@ -265,7 +270,7 @@ class Duplications(object):
 
     def save_blast_stats(self):
         """Save the dataframe above in a CSV file"""
-        self.blast_stats.to_csv(str(self.analysis.p.user_outputs_dir + 'blast_stats.tsv'), sep='\t', encoding='utf-8')
+        self.blast_stats.to_csv(str(self.p.blast_stats), sep='\t', encoding='utf-8')
 
 ###############################################################################
 class TaxonomyPlot(Graph):
@@ -280,27 +285,27 @@ class TaxonomyPlot(Graph):
         fams = OrderedDict([(f,0) for f in families])
         for g in self.parent.best_is_marine: fams[g.hits[-1]['taxonomy']] += 1
         # Then the ncbi hits #
-        categories = OrderedDict((('Life',0),
-                                  ('Bacteria',0),
-                                  ('Proteobacteria',0),
-                                  ('Alphaproteobacteria',0),
-                                  ('SAR11 cluster',0),
+        self.categories = OrderedDict((('Life',              0),
+                                  ('Bacteria',               0),
+                                  ('Proteobacteria',         0),
+                                  ('Alphaproteobacteria',    0),
+                                  ('SAR11 cluster',          0),
                                   ('Candidatus Pelagibacter',0)))
         for g in self.parent.best_is_other:
             tax = g.hits[-1]['taxonomy'].split(';')
             tax.append("")
             tax.append("")
             tax.append("")
-            if   tax[0].strip() != 'Bacteria':                 categories['Life']                     += 1
-            elif tax[1].strip() != 'Proteobacteria':           categories['Bacteria']                 += 1
-            elif tax[2].strip() != 'Alphaproteobacteria':      categories['Proteobacteria']           += 1
-            elif tax[3].strip() != 'SAR11 cluster':            categories['Alphaproteobacteria']      += 1
-            elif tax[4].strip() != 'Candidatus Pelagibacter':  categories['SAR11 cluster']            += 1
-            else:                                              categories['Candidatus Pelagibacter']  += 1
+            if   tax[0].strip() != 'Bacteria':                 self.categories['Life']                     += 1
+            elif tax[1].strip() != 'Proteobacteria':           self.categories['Bacteria']                 += 1
+            elif tax[2].strip() != 'Alphaproteobacteria':      self.categories['Proteobacteria']           += 1
+            elif tax[3].strip() != 'SAR11 cluster':            self.categories['Alphaproteobacteria']      += 1
+            elif tax[4].strip() != 'Candidatus Pelagibacter':  self.categories['SAR11 cluster']            += 1
+            else:                                              self.categories['Candidatus Pelagibacter']  += 1
         # Frame #
         self.frame = OrderedDict()
         self.frame.update(no_hits)
-        self.frame.update(categories)
+        self.frame.update(self.categories)
         self.frame.update(fams)
         self.frame = pandas.Series(self.frame)
         # Plot #
