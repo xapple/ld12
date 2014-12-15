@@ -204,6 +204,16 @@ class Duplications(object):
         self.top_is_fresh   = [g for g in self.yes_hit_genes if g.hits[0]['type'] == 'fresh']
         self.best_is_marine = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'marine']
         self.best_is_other  = [g for g in self.yes_hit_genes if g.hits[-1]['type'] == 'other']
+        # Assign the first deviating taxa #
+        for g in self.best_is_other:
+            tax = g.hits[-1]['taxonomy'].split(';')
+            tax += ["", "", ""]
+            if   tax[0].strip() != 'Bacteria':                 g.best_tax = 'Life'
+            elif tax[1].strip() != 'Proteobacteria':           g.best_tax = 'Bacteria'
+            elif tax[2].strip() != 'Alphaproteobacteria':      g.best_tax = 'Proteobacteria'
+            elif tax[3].strip() != 'SAR11 cluster':            g.best_tax = 'Alphaproteobacteria'
+            elif tax[4].strip() != 'Candidatus Pelagibacter':  g.best_tax = 'SAR11 cluster'
+            else:                                              g.best_tax = 'Candidatus Pelagibacter'
         # Done #
         self.timer.print_elapsed()
 
@@ -260,6 +270,10 @@ class Duplications(object):
         result = []
         # Main loop #
         for g in self.genes:
+            if len(g.hits) == 0:
+                result.append((g.name, g.genome.name, g.genome.info['taxon'],
+                               -1 , "nohit", "nohit", "nohit",  "nohit", "nohit", "nohit"))
+                continue
             for i, hit in enumerate(g.hits):
                 result.append((g.name, g.genome.name, g.genome.info['taxon'],
                                i+1 , hit['type'], hit['source'], hit['id'], hit['score'],
@@ -285,23 +299,13 @@ class TaxonomyPlot(Graph):
         fams = OrderedDict([(f,0) for f in families])
         for g in self.parent.best_is_marine: fams[g.hits[-1]['taxonomy']] += 1
         # Then the ncbi hits #
-        self.categories = OrderedDict((('Life',              0),
-                                  ('Bacteria',               0),
-                                  ('Proteobacteria',         0),
-                                  ('Alphaproteobacteria',    0),
-                                  ('SAR11 cluster',          0),
-                                  ('Candidatus Pelagibacter',0)))
-        for g in self.parent.best_is_other:
-            tax = g.hits[-1]['taxonomy'].split(';')
-            tax.append("")
-            tax.append("")
-            tax.append("")
-            if   tax[0].strip() != 'Bacteria':                 self.categories['Life']                     += 1
-            elif tax[1].strip() != 'Proteobacteria':           self.categories['Bacteria']                 += 1
-            elif tax[2].strip() != 'Alphaproteobacteria':      self.categories['Proteobacteria']           += 1
-            elif tax[3].strip() != 'SAR11 cluster':            self.categories['Alphaproteobacteria']      += 1
-            elif tax[4].strip() != 'Candidatus Pelagibacter':  self.categories['SAR11 cluster']            += 1
-            else:                                              self.categories['Candidatus Pelagibacter']  += 1
+        self.categories = OrderedDict((('Life',                    0),
+                                       ('Bacteria',                0),
+                                       ('Proteobacteria',          0),
+                                       ('Alphaproteobacteria',     0),
+                                       ('SAR11 cluster',           0),
+                                       ('Candidatus Pelagibacter', 0)))
+        for g in self.parent.best_is_other: self.categories[g.best_tax] += 1
         # Frame #
         self.frame = OrderedDict()
         self.frame.update(no_hits)
