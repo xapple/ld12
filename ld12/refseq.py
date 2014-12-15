@@ -20,9 +20,6 @@ class RefSeqProkPlusMarine(object):
     already added to RefSeq."""
 
     all_paths = """
-
-
-
     /all_genes.fasta
     /all_genes.fasta.00.pin
     /log.txt
