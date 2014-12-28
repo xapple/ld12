@@ -16,7 +16,7 @@ from shell_command import shell_output
 class RefSeqProkPlusMarine(object):
     """A special database combining the refseq non redundant protein archives
     for both bacteria and archaea, with, as an extra, all the marine genes added.
-    In addition, we will remove the freshwater genomes that appear to have been
+    In addition, we will also add the freshwater genomes that appear to have been
     already added to RefSeq."""
 
     all_paths = """

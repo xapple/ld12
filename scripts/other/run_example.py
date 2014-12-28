@@ -1,4 +1,4 @@
-"""You can use the command line script to run the pipeline, or you can use this example to type commands into an ipython prompt yourself"""
+"""You can use the command line script to run the pipeline, or you can use this example to type commands into an ipython prompt yourself."""
 
 # Modules #
 import socket, os

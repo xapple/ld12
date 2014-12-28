@@ -2,6 +2,11 @@
 import os, re
 from collections import OrderedDict
 
+# Plot #
+import matplotlib
+matplotlib.use('Agg', warn=False)
+from matplotlib import pyplot
+
 # Internal modules #
 from ld12 import genomes, genes, families
 from ld12.refseq import RefSeqProkPlusMarine
@@ -20,18 +25,13 @@ import pandas
 from shell_command import shell_output
 from tqdm import tqdm
 
-# Plot #
-import matplotlib
-matplotlib.use('Agg', warn=False)
-from matplotlib import pyplot
-
 # Constants #
 home = os.environ['HOME'] + '/'
 
 ###############################################################################
 class Duplications(object):
     """This sub-object takes care of BLASTing the genes against the refseq database
-    and parsing the results form that. We want to blast only the fresh water
+    and parsing the results from that. We want to blast only the fresh water
     clusters against a modified refseq database."""
 
     all_paths = """
@@ -83,7 +83,7 @@ class Duplications(object):
 
     @property_cached
     def search(self):
-        """The sequence similarity search to be run"""
+        """The sequence similarity search to be run."""
         return ParallelSeqSearch(
             algorithm    = "blast",
             input_fasta  = self.fresh_fasta,
@@ -102,8 +102,7 @@ class Duplications(object):
 
     @property
     def search_results(self):
-        """For every gene, search against a database of all gene, return the best hit
-        after filtering."""
+        """Return the best hits after filtering."""
         # Check that the search was run #
         if not self.search.out_path.exists:
             print "Using: %s genes" % split_thousands(len(self.fresh_fasta))
@@ -154,8 +153,8 @@ class Duplications(object):
         object in each freshwater Genome object."""
         # Just assign #
         for query_id, hit_id, bitscore, identity, coverage in self.search_results:
-            gene = genes[query_id].raw_hits.append((hit_id, bitscore))
-        # Load #
+            gene = genes[query_id].raw_hits.append((hit_id, bitscore, coverage))
+        # Load the pickled property #
         print "Loading all NCBI records into RAM..."
         print "Got %i records." % len(self.gi_to_record)
         self.timer.print_elapsed()

@@ -26,8 +26,11 @@ from shell_command import shell_output
 
 ###############################################################################
 class Analysis(object):
-    """The main object. The only mandatory argument is the input fasta file path.
-    Look at the Omnigraffle outline for more information."""
+    """The main object which will run everything.
+    Look at the Omnigraffle outline for more information. Typically you could
+    start ipython like this to quickly create an Analysis object:
+    $ ipython -i -c "from ld12.analysis import Analysis; a = Analysis();"
+    """
 
     all_paths = """
     /clusters/
@@ -57,7 +60,7 @@ class Analysis(object):
         (self.__class__.__name__, len(self.genomes))
 
     def __init__(self,
-                 out_dir      = './ld12_output/',
+                 out_dir      = '~/LD12/results',
                  e_value      = 0.001,
                  min_identity = 0.3,
                  min_coverage = 0.5,
