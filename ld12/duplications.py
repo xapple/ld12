@@ -162,10 +162,11 @@ class Duplications(object):
         print "Processing top hits for %i genes..." % len(self.genes)
         for gene in tqdm(self.genes):
             result = []
-            for hit_id, bitscore in gene.raw_hits:
+            for hit_id, bitscore, coverage in gene.raw_hits:
                 # The id and score #
-                hit = {'id':    hit_id,
-                       'score': bitscore}
+                hit = {'id':       hit_id,
+                       'score':    bitscore,
+                       'coverage': coverage}
                 # The source: refseq, missing #
                 if hit_id.startswith('gi'):
                     hit['source'] = "refseq"
@@ -264,6 +265,7 @@ class Duplications(object):
     @property
     def blast_stats(self):
         columns = ['Query gene', 'Query genome', 'Query taxon',
+                   'Query length', 'Query coverage',
                    'Hit number', 'Hit Type', 'Hit source', 'Hit ID', 'Hit bit score',
                    'Hit Taxonomy', 'Hit is in same genome as query']
         result = []
@@ -271,15 +273,19 @@ class Duplications(object):
         for g in self.genes:
             if len(g.hits) == 0:
                 result.append((g.name, g.genome.name, g.genome.info['taxon'],
-                               -1 , "nohit", "nohit", "nohit",  "nohit", "nohit", "nohit"))
+                               len(g.seq), "nohit",
+                               -1 , "nohit", "nohit", "nohit",  "nohit",
+                               "nohit", "nohit"))
                 continue
             for i, hit in enumerate(g.hits):
                 result.append((g.name, g.genome.name, g.genome.info['taxon'],
+                               len(g.seq), hit['coverage'],
                                i+1 , hit['type'], hit['source'], hit['id'], hit['score'],
                                hit['taxonomy'], hit['type'] == 'fresh' and hit['genome'] is g.genome))
         # Make a data frame #
         result = pandas.DataFrame(result, columns=columns)
         return result
+        pass
 
     def save_blast_stats(self):
         """Save the dataframe above in a CSV file"""

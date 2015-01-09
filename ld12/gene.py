@@ -11,6 +11,7 @@ class Gene(object):
 
     def __repr__(self): return '<%s object %s>' % (self.__class__.__name__, self.name)
     def __str__(self): return str(self.seq.seq)
+    def __len__(self): return len(self.seq)
 
     def __init__(self, seq, genome):
         self.seq        = seq
