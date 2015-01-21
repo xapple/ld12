@@ -2,8 +2,8 @@ from distutils.core import setup
 
 setup(
       name             = 'ld12',
-      version          = '0.9.0',
-      description      = 'Analysis for LD12 genomes.',
+      version          = '1.0.0',
+      description      = 'Analysis for LD12 genomes and the freshwater against marine comparison paper.',
       long_description = open('README.md').read(),
       license          = 'MIT',
       url              = 'https://bitbucket.org/xapple/ld12',
@@ -11,5 +11,6 @@ setup(
       author_email     = 'lucas.sinclair@me.com',
       classifiers      = ['Topic :: Scientific/Engineering :: Bio-Informatics'],
       packages         = ['ld12'],
+      scripts          = ['ld12/ld12'],
       requires         = ['plumbing', 'fasta', 'seqsearch', 'biopython', 'sh', 'pandas', 'shell_command'],
 )

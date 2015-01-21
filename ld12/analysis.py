@@ -100,7 +100,7 @@ class Analysis(object):
         if not self.p.all_nin and not self.p.all_pin:
             print "--> STEP 1: Building BLASTable database with all genes..."
             shell_output('gunzip -c %s > %s' % (' '.join(genomes.values()), db))
-            assert len(db) == sum(map(len,genomes.values()))
+            assert len(db) == sum(map(len, genomes.values()))
             db.makeblastdb()
             self.timer.print_elapsed()
         return db

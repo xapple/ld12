@@ -1,3 +1,3 @@
-# ld12 version 0.9.0
+# ld12 version 1.0.0
 
-Analysis for LD12 genomes
+Analysis for LD12 genomes and the freshwater against marine comparison paper.

@@ -236,7 +236,7 @@ class Duplications(object):
         self.p.hit_stats.writelines(self.hit_stats)
 
     #-------------------------------------------------------------------------#
-    #                             DUPLICATION                                 #
+    #                             DUPLICATIONS                                #
     #-------------------------------------------------------------------------#
     @property
     def duplications_stats(self):
@@ -262,6 +262,7 @@ class Duplications(object):
         """Save the dataframe above in a CSV file"""
         self.duplications_stats.to_csv(str(self.p.duplications), sep='\t', encoding='utf-8')
 
+    #-------------------------------------------------------------------------#
     @property
     def blast_stats(self):
         columns = ['Query gene', 'Query genome', 'Query taxon',
