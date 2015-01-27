@@ -54,6 +54,7 @@ class Analysis(object):
     /user_outputs/hit_stats.txt
     /user_outputs/duplications_stats.tsv
     /user_outputs/blast_stats.tsv
+    /user_outputs/three_b_neighbors.tsv
     """
 
     def __repr__(self): return '<%s object with %i genomes>' % \

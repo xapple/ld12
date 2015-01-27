@@ -165,6 +165,50 @@ class Comparison(object):
         self.analysis.p.three.write(content)
 
     #-------------------------------------------------------------------------#
+    #                         SPLIT 3b with unknown                           #
+    #-------------------------------------------------------------------------#
+    @property_cached
+    def split_neighbors(self):
+        """Looking at IIIb's neighbors and report them"""
+        # Message #
+        print "Looking at IIIb's neighbors..."
+        # The result for every tree #
+        result = [['cluster num', 'neighbor', 'num of neighbors', 'neighbor families', 'support']]
+        # Families #
+        fam = families['IIIb']
+        # Main loop #
+        for cluster in tqdm(self.analysis.best_clusters):
+            # Check exists #
+            if not cluster.p.bestTree.exists:
+                print "Warning: cluster %s is missing a tree, skipping" % cluster
+                continue
+            # Load tree with bootstrap values #
+            tree = cluster.tree_labels_ete
+            # Mono #
+            if not tree.check_monophyly(values=['IIIb'], target_attr="family")[0]: continue
+            # Collapse #
+            self.collapse_families(tree, [fam])
+            b = tree.search_nodes(family='IIIb')
+            assert len(b) == 1
+            b = b[0]
+            # Get neighbor #
+            n = b.get_sisters()
+            assert len(n) == 1
+            n = n[0]
+            # Is it a leaf or not #
+            if not n.is_leaf():
+                leaves = n.get_leaves()
+                result.append([cluster.num, 'Branching node', len(leaves), set(l.family for l in leaves), b.up.support])
+            else:
+                result.append([cluster.num,  n.name,          1,           n.family,                      b.up.support])
+        # Return #
+        return result
+
+    def save_split_neighbors(self):
+        """Save the dataframe above in a CSV file"""
+        self.analysis.p.neighbors.write('\n'.join('\t'.join(line) for line in self.split_neighbors))
+
+    #-------------------------------------------------------------------------#
     #                          SPLITS CONSERVED                               #
     #-------------------------------------------------------------------------#
     @property_cached
