@@ -206,7 +206,8 @@ class Comparison(object):
 
     def save_split_neighbors(self):
         """Save the results above in a TSV file"""
-        self.analysis.p.neighbors.write('\n'.join('\t'.join(line) for line in self.split_neighbors))
+        content = '\n'.join('\t'.join(map(str,line)) for line in self.split_neighbors)
+        self.analysis.p.neighbors.write(content)
 
     #-------------------------------------------------------------------------#
     #                          SPLITS CONSERVED                               #
