@@ -200,12 +200,12 @@ class Comparison(object):
                 leaves = n.get_leaves()
                 result.append([cluster.num, 'Branching node', len(leaves), set(l.family for l in leaves), b.up.support])
             else:
-                result.append([cluster.num,  n.name,          1,           n.family,                      b.up.support])
+                result.append([cluster.num,  n.name,          '1',         n.family,                      b.up.support])
         # Return #
         return result
 
     def save_split_neighbors(self):
-        """Save the dataframe above in a CSV file"""
+        """Save the results above in a TSV file"""
         self.analysis.p.neighbors.write('\n'.join('\t'.join(line) for line in self.split_neighbors))
 
     #-------------------------------------------------------------------------#
