@@ -198,7 +198,7 @@ class Comparison(object):
             # Is it a leaf or not #
             if not n.is_leaf():
                 leaves = n.get_leaves()
-                result.append([cluster.num, 'Branching node', len(leaves), set(l.family for l in leaves), b.up.support])
+                result.append([cluster.num, 'Branching node', len(leaves), list(set(l.family for l in leaves), b.up.support])
             else:
                 result.append([cluster.num,  n.name,          '1',         n.family,                      b.up.support])
         # Return #
