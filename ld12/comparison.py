@@ -115,17 +115,21 @@ class Comparison(object):
     #-------------------------------------------------------------------------#
     @property_cached
     def split_three_a_b(self):
-        """Do the trees that are monophyletic for IIIa and IIIb match the reference tree
-        just for that split."""
+        """Do the trees that are monophyletic for IIIa and IIIb have them
+        on a same split (like the reference tree has)."""
         # Message #
         print "Computing which trees conserve 3a-3b..."
         # Let's maintain two lists #
         split_conserved = []
         split_broken    = []
         # Families #
-        fams = [f for name,f in families.items() if name == 'IIIa' or name == 'IIIb']
+        fams = [families['IIIa'], families['IIIb']]
         # Main loop #
         for cluster in tqdm(self.analysis.best_clusters):
+            # Check exists #
+            if not cluster.p.bestTree.exists:
+                print "Warning: cluster %s is missing a tree, skipping" % cluster
+                continue
             # Tree with bootstrap values #
             tree = cluster.tree_labels_ete
             # Mono A #
