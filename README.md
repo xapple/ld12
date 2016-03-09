@@ -1,6 +1,6 @@
 # `ld12` version 1.0.1
 
-Automated analysis and visualization generation of the LD12 genomes and the freshwater genomes comparision for the "Tuning fresh" paper.
+Automated analysis and visualization generation of the LD12 genomes and the freshwater genomes comparision for the "Tuning fresh" paper. Written by [Lucas Sinclair](http://envonautics.com/#lucas).
 
 ### Publication
 The published paper for which this pipeline was made can be found here:
