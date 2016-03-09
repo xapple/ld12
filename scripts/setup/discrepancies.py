@@ -1,4 +1,4 @@
-"""There are some discrepancies between the fna and faa files. What are they"""
+"""There are some discrepancies between the fna and faa files. What are they?"""
 
 import numpy
 from fasta import FASTA
